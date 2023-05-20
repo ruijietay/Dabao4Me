@@ -7,12 +7,6 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-<<<<<<< HEAD
-## just testing branches again
-=======
-## just testing branches again on testingRJ branch
->>>>>>> testingRJ
-
 # Function that runs when /start is received
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!")
