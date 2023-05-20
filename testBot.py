@@ -7,7 +7,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-## just testing branches
+## just testing branches again on testingRJ branch
 
 # Function that runs when /start is received
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
