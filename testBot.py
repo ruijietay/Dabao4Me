@@ -2,6 +2,10 @@ import logging
 from telegram import Update
 from telegram.ext import filters, MessageHandler, ApplicationBuilder, ContextTypes, CommandHandler
 
+import keys
+
+bot_token = keys.bot_token
+
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -26,7 +30,7 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == '__main__':
     # Creates the bot Application
-    application = ApplicationBuilder().token('5937019735:AAGHDxML3WPmbSuIw4NxPxeww0UP5Wezvw0').build()
+    application = ApplicationBuilder().token(bot_token).build()
     
     # Creates a CommandHandler that handles /start commands
     start_handler = CommandHandler('start', start)
