@@ -71,9 +71,6 @@ def main() -> None:
     application.add_handler(conv_handler_req)
     application.add_handler(MessageHandler(filters.TEXT, unknown))
 
-    
-    
-
     # Run the bot until the user presses Ctrl-C
     application.run_polling()
 

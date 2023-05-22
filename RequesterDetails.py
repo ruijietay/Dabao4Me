@@ -15,28 +15,6 @@ logger = logging.getLogger(__name__)
 
 NAME, CANTEEN, FOOD, OFFER_PRICE = range(4)
 
-# async def getDetails(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-#     # Various function calls to get relevant details.
-#     if (update.callback_query.data == "requester"):
-#         # conv_handler_req = ConversationHandler(entry_points=[MessageHandler("requester", requesterName)],
-#         #                                        states={
-#         #                                            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterName)],
-#         #                                            CANTEEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterCanteen)],
-#         #                                            FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterFood)],
-#         #                                            OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterPrice)],
-#         #                                        },
-#         #                                        fallbacks=MenuHandler.unknown)
-
-#         await update.message.reply_text("Alright! Now, please state your name.")
-
-#         requesterNameField = update.message.text
-
-#         # Store information about their name.
-#         user = update.message.from_user
-#         logger.info("Name of %s: %s", user.first_name, requesterNameField)
-
-#         return NAME
-        
 async def requesterName(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     requesterNameField = update.message.text
 
