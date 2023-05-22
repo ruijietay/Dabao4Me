@@ -9,34 +9,12 @@ bot_token = keys.bot_token
 
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s | %(name)s | %(levelname)s | %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
 NAME, CANTEEN, FOOD, OFFER_PRICE = range(4)
 
-# async def getDetails(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-#     # Various function calls to get relevant details.
-#     if (update.callback_query.data == "requester"):
-#         # conv_handler_req = ConversationHandler(entry_points=[MessageHandler("requester", requesterName)],
-#         #                                        states={
-#         #                                            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterName)],
-#         #                                            CANTEEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterCanteen)],
-#         #                                            FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterFood)],
-#         #                                            OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterPrice)],
-#         #                                        },
-#         #                                        fallbacks=MenuHandler.unknown)
-
-#         await update.message.reply_text("Alright! Now, please state your name.")
-
-#         requesterNameField = update.message.text
-
-#         # Store information about their name.
-#         user = update.message.from_user
-#         logger.info("Name of %s: %s", user.first_name, requesterNameField)
-
-#         return NAME
-        
 async def requesterName(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     requesterNameField = update.message.text
 
@@ -83,7 +61,7 @@ async def requesterFood(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user = update.message.from_user
     logger.info("Food of %s: %s", user.first_name, requesterFoodField)
 
-    await update.message.reply_text("Finally, please state the price you'd like to set for this request (excluding food prices)")
+    await update.message.reply_text("Finally, how much would you like to tip the fulfiller for your request? (excluding food prices)")
 
     return OFFER_PRICE
 
@@ -92,6 +70,6 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # Store information about their name.
     user = update.message.from_user
-    logger.info("Food of %s: %s", user.first_name, requesterPriceField)
+    logger.info("%s tipped: %s", user.first_name, requesterPriceField)
 
     return ConversationHandler.END

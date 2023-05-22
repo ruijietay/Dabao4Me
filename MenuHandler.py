@@ -11,7 +11,7 @@ bot_token = keys.bot_token
 
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s | %(name)s | %(levelname)s | %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
@@ -48,10 +48,18 @@ async def selectRole(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     return RequesterDetails.NAME
 
-
+# Fallback method if user sends unknown command or text
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I don't understand what you've said.")
 
+# Method to cancel current transaction
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Current transaction cancelled.")
+    # Store information about their name.
+    user = update.message.from_user
+    logger.info("%s cancelled a transaction.", user.first_name)
+
+    return ConversationHandler.END
 
 def main() -> None:
     # Create the Application and pass it your bot's token.
@@ -66,13 +74,10 @@ def main() -> None:
             RequesterDetails.FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterFood)],
             RequesterDetails.OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterPrice)],
         },
-        fallbacks=[CommandHandler("cancel", unknown)])
+        fallbacks=[CommandHandler("cancel", cancel)])
     
     application.add_handler(conv_handler_req)
     application.add_handler(MessageHandler(filters.TEXT, unknown))
-
-    
-    
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling()
