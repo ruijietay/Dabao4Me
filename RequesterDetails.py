@@ -48,7 +48,7 @@ async def requesterCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     # Store information about their name.
     user = update.callback_query.from_user
-    logger.info("Canteen of %s: %s", user.first_name, requesterCanteenField.message)
+    logger.info("Canteen of %s: %s", user.first_name, requesterCanteenField.data)
 
     await requesterCanteenField.message.reply_text("Great! Now, please state the food you'd like to order.")
 

@@ -39,7 +39,7 @@ async def selectRole(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     # Store information about their role.
     user = update.callback_query.from_user
-    logger.info("Canteen of %s: %s", user.first_name, roleSelected.message)
+    logger.info("Role of %s: %s", user.first_name, roleSelected.message)
 
     await roleSelected.message.reply_text(text=f"You have chosen to be a {roleSelected.data}. "
                                    "Now, we need some details so we can match you with a potential fulfiller. \n\n"
