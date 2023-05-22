@@ -2,4 +2,4 @@
 keys.py
 
 # Ignore python cache directory
-__pycache__/
+**/__pycache__/
