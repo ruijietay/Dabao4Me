@@ -13,36 +13,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-NAME, CANTEEN, FOOD, OFFER_PRICE = range(4)
-
-async def requesterName(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    requesterNameField = update.message.text
-
-    # Store information about their name.
-    user = update.message.from_user
-    logger.info("Name of %s: %s", user.first_name, requesterNameField)
-
-    # Define the canteens using a 2D array.
-    inlineCanteen = [
-        [InlineKeyboardButton("The Deck", callback_data="deck")],
-        [InlineKeyboardButton("Frontier", callback_data="frontier")],
-        [InlineKeyboardButton("Fine Foods", callback_data="fine_foods")],
-        [InlineKeyboardButton("Flavours @ Utown", callback_data="flavours")],
-        [InlineKeyboardButton("TechnoEdge", callback_data="technoedge")],
-        [InlineKeyboardButton("PGPR", callback_data="pgpr")],
-    ]
-
-
-    # Transform the 2D array into an actual inline keyboard that can be interpreted by Telegram.
-    inlineCanteenTG = InlineKeyboardMarkup(inlineCanteen)
-
-    await update.message.reply_text("Now, please select from the list of canteens below.", reply_markup=inlineCanteenTG)
-
-    return CANTEEN
+CANTEEN, FOOD, OFFER_PRICE = range(3)
 
 async def requesterCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     requesterCanteenField = update.callback_query
-
+   
     # Once the user clicks a button, we need to "answer" the CallbackQuery.
     await requesterCanteenField.answer()
 
