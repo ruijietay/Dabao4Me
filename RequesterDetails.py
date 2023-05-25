@@ -3,7 +3,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 
 import logging
 import keys
-import MenuHandler
+import MainMenu
 
 bot_token = keys.bot_token
 
@@ -140,16 +140,14 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     logger.info("Food of %s: %s", user.first_name, requesterPrice)
 
     # Put details of request into data structure.
-    MenuHandler.available_requests.update({
+    MainMenu.available_requests.append({
         # Potential Issue: Not every telegram account has a username.
-        "requester" : {
-            "username" : update.effective_user.name,
-            "canteen" : context.user_data[CANTEEN],
-            "food" : context.user_data[FOOD],
-            "tip_amount" : context.user_data[OFFER_PRICE]
-        }
+        "username" : update.effective_user.name,
+        "canteen" : context.user_data[CANTEEN],
+        "food" : context.user_data[FOOD],
+        "tip_amount" : context.user_data[OFFER_PRICE]
     })
 
-    await update.message.reply_text(str(MenuHandler.available_requests))
+    await update.message.reply_text(str(MainMenu.available_requests))
 
-    return ConversationHandler.END
+    return CANTEEN
