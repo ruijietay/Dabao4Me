@@ -2,3 +2,7 @@
 __pycache__
 keys.py
 nestedconversationbot.py
+keys.py
+
+# Ignore python cache directory
+**/__pycache__/

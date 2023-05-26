@@ -9,7 +9,7 @@ bot_token = keys.bot_token
 
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s | %(name)s | %(levelname)s | %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ async def requesterFood(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user = update.message.from_user
     logger.info("Food of %s: %s", user.first_name, requesterFood)
 
-    await update.message.reply_text("Finally, please state the price you'd like to set for this request (excluding food prices)")
+    await update.message.reply_text("Finally, how much would you like to tip the fulfiller for your request? (excluding food prices)")
 
     return OFFER_PRICE
 
