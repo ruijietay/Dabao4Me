@@ -85,4 +85,6 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # Show list of available requests, filtered by the selected canteen.
     await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(MainMenu.available_requests, selectedCanteen))
 
+    await update.callback_query.message.reply_text("To restart, send /start again.")
+
     return ENDFulfillerConv

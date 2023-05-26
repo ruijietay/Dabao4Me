@@ -155,5 +155,8 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "\nCanteen: " + MainMenu.canteenDict[context.user_data[CANTEEN]] + 
                                     "\nFood: " + context.user_data[FOOD] +
                                     "\nTip Amount: SGD$" + context.user_data[OFFER_PRICE])
+    
+    await update.message.reply_text("To restart, send /start again.")
+
 
     return ENDRequesterConv
