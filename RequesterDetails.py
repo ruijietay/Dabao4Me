@@ -148,6 +148,9 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "tip_amount" : context.user_data[OFFER_PRICE]
     })
 
-    await update.message.reply_text(str(MainMenu.available_requests))
+    await update.message.reply_text(parse_mode="MarkdownV2", text="Request placed\! \n__*Summary*__ " + 
+        "\nCanteen: " + MainMenu.canteenDict[context.user_data[CANTEEN]] + 
+                                    "\nFood: " + context.user_data[FOOD] +
+                                    "\nTip Amount: " + context.user_data[OFFER_PRICE])
 
-    return CANTEEN
+    return ConversationHandler.END

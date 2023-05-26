@@ -20,6 +20,15 @@ ROLE = range(1)
 
 available_requests = []
 
+canteenDict = {
+    "deck": "The Deck",
+    "frontier": "Frontier",
+    "fine_foods": "Fine Foods",
+    "flavours": "Flavours @ Utown",
+    "technoedge": "TechnoEdge",
+    "pgpr": "PGPR"
+}
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Define the menu using a 2D array.
     inlineMenu = [
@@ -91,6 +100,7 @@ def main() -> None:
         fallbacks=[CommandHandler("cancel", cancel)])
     
     application.add_handler(conv_handler_req)
+    application.add_handler(CommandHandler("cancel", invalidCancel))
     application.add_handler(MessageHandler(filters.TEXT, unknown))
 
     # Run the bot until the user presses Ctrl-C
