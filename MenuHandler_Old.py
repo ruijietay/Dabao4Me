@@ -62,7 +62,7 @@ def main() -> None:
         states={
             ROLE: [CallbackQueryHandler(selectRole)],
             RequesterDetails.NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterName)],
-            RequesterDetails.CANTEEN: [CallbackQueryHandler(RequesterDetails.requesterCanteen)],
+            RequesterDetails.CANTEEN: [CallbackQueryHandler(RequesterDetails.selectCanteen)],
             RequesterDetails.FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterFood)],
             RequesterDetails.OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterPrice)],
         },

@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-ROLE = range(1)
+ROLE, RESTART = range(2)
 
 available_requests = []
 
@@ -70,20 +70,25 @@ def main() -> None:
     requester_conv = ConversationHandler(
         entry_points = [CallbackQueryHandler(RequesterDetails.promptCanteen, pattern = "requester")],
         states  = {
-            RequesterDetails.CANTEEN: [CallbackQueryHandler(RequesterDetails.requesterCanteen)],
+            RequesterDetails.CANTEEN: [CallbackQueryHandler(RequesterDetails.selectCanteen)],
             RequesterDetails.FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterFood)],
             RequesterDetails.OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterPrice)]
         },
-        fallbacks = [CommandHandler("cancel", cancel)]
+        fallbacks = [CommandHandler("cancel", cancel)],
+        map_to_parent= {
+            RequesterDetails.ENDRequesterConv : ConversationHandler.END
+        }
     )
 
     fulfiller_conv = ConversationHandler(
         entry_points = [CallbackQueryHandler(FulfillerDetails.promptCanteen , pattern = "fulfiller")],
         states = {
-            FulfillerDetails.CANTEEN: [CallbackQueryHandler(FulfillerDetails.fulfillerCanteen)],
-            FulfillerDetails.REQUESTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, FulfillerDetails.availableRequests)],
+            FulfillerDetails.CANTEEN: [CallbackQueryHandler(FulfillerDetails.selectCanteen)],
         },
-        fallbacks = [CommandHandler("cancel", cancel)]
+        fallbacks = [CommandHandler("cancel", cancel)],
+        map_to_parent= {
+            FulfillerDetails.ENDFulfillerConv : ConversationHandler.END
+        }
     )
 
     # List of handlers that the user can trigger based on their input.
@@ -92,16 +97,17 @@ def main() -> None:
         fulfiller_conv
     ]
 
-    conv_handler_req = ConversationHandler(
+    conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
+            RESTART: [CommandHandler("start", start)],
             ROLE: role_handlers
         },
         fallbacks=[CommandHandler("cancel", cancel)])
     
-    application.add_handler(conv_handler_req)
-    application.add_handler(CommandHandler("cancel", invalidCancel))
-    application.add_handler(MessageHandler(filters.TEXT, unknown))
+    application.add_handler(conv_handler)
+    # application.add_handler(CommandHandler("cancel", invalidCancel))
+    # application.add_handler(MessageHandler(filters.TEXT, unknown))
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling()

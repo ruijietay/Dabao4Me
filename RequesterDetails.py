@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 NAME, CANTEEN, FOOD, OFFER_PRICE, ROLE = range(5)
 
+# Define ConversationHandler.END in another variable for clarity.
+ENDRequesterConv = ConversationHandler.END
+
 # async def getDetails(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 #     # Various function calls to get relevant details.
 #     if (update.callback_query.data == "requester"):
@@ -95,7 +98,7 @@ async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     return CANTEEN
 
-async def requesterCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Get the canteen selected from the requester.
     canteenSelected = update.callback_query.data
 
@@ -151,6 +154,6 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.message.reply_text(parse_mode="MarkdownV2", text="Request placed\! \n__*Summary*__ " + 
         "\nCanteen: " + MainMenu.canteenDict[context.user_data[CANTEEN]] + 
                                     "\nFood: " + context.user_data[FOOD] +
-                                    "\nTip Amount: " + context.user_data[OFFER_PRICE])
+                                    "\nTip Amount: SGD$" + context.user_data[OFFER_PRICE])
 
-    return ConversationHandler.END
+    return ENDRequesterConv

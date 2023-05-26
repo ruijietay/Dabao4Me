@@ -13,7 +13,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-CANTEEN, REQUESTS, ROLE = range(3)
+CANTEEN, REQUESTS, ROLE, RESTART = range(4)
+
+# Define ConversationHandler.END in another variable for clarity.
+ENDFulfillerConv = ConversationHandler.END
 
 def processRequests(available_requests, selected_canteen):
 
@@ -22,11 +25,12 @@ def processRequests(available_requests, selected_canteen):
         canteen = requests["canteen"]
         
         if canteen == selected_canteen:
+            formattedCanteen = MainMenu.canteenDict[selected_canteen]
             username = requests["username"]
             food = requests["food"]
             tip_amount = requests["tip_amount"]
 
-            formatted_output += f"Username: {username}\nCanteen: {canteen}\nFood: {food}\nTip Amount: SGD${tip_amount}\n\n"
+            formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: SGD${tip_amount}\n\n"
     
     return formatted_output
 
@@ -64,7 +68,7 @@ async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     return CANTEEN
 
-async def fulfillerCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Get the canteen selected from the fulfiller.
     selectedCanteen = update.callback_query.data
 
@@ -78,19 +82,7 @@ async def fulfillerCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     user = update.callback_query.from_user
     logger.info("Fulfiller %s selected %s as their canteen.", user.first_name, update.callback_query.message)
 
+    # Show list of available requests, filtered by the selected canteen.
     await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(MainMenu.available_requests, selectedCanteen))
 
-    return CANTEEN
-
-async def availableRequests(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:    
-    # requesterFood = update.message.text
-
-    # # Store information about their name.
-    # user = update.message.from_user
-    # logger.info("Food of %s: %s", user.first_name, requesterFood)
-
-    # await update.message.reply_text("Finally, please state the price you'd like to set for this request (excluding food prices)")
-
-    await update.message.reply_text(str(MainMenu.available_requests))
-    
-    return ConversationHandler.END
+    return ENDFulfillerConv
