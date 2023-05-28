@@ -45,12 +45,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I don't understand what you've said.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Unknown command. Send /start to begin using the bot.")
 
 
 # Method to cancel current transaction
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Current transaction cancelled.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Current operation cancelled.")
     # Store information about their name.
     user = update.message.from_user
     logger.info("%s cancelled a transaction.", user.first_name)
@@ -60,7 +60,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # If user tries to cancel outside of a transaction, send a slightly more helpful response
 async def invalidCancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="There is no ongoing transaction to cancel.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="There is no ongoing operation to cancel.")
 
 
 def main() -> None:
@@ -106,8 +106,8 @@ def main() -> None:
         fallbacks=[CommandHandler("cancel", cancel)])
     
     application.add_handler(conv_handler)
-    # application.add_handler(CommandHandler("cancel", invalidCancel))
-    # application.add_handler(MessageHandler(filters.TEXT, unknown))
+    application.add_handler(CommandHandler("cancel", invalidCancel))
+    application.add_handler(MessageHandler(filters.TEXT, unknown))
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling()

@@ -4,6 +4,7 @@ keys.py
 nestedconversationbot.py
 keys.py
 config.ini
+DynamoDBTest.py
 
 # Ignore python cache directory
 **/__pycache__/
