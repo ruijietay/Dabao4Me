@@ -2,10 +2,28 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters, ConversationHandler
 
 import logging
-import keys
 import MainMenu
+import boto3
+import configparser
 
-bot_token = keys.bot_token
+# Create config parser and read config file
+config = configparser.ConfigParser()
+config.read("config.ini")
+
+# Load bot token
+bot_token = config["bot_keys"]["test_bot_token"]
+
+# The name of our table in DynamoDB
+tableName = "Dabao4Me_Requests"
+
+# Create resource object to access DynamoDB
+db = boto3.resource('dynamodb', 
+                    region_name = config["dynamodb"]["region_name"], 
+                    aws_access_key_id = config["dynamodb"]["aws_access_key_id"],
+                    aws_secret_access_key = config["dynamodb"]["aws_secret_access_key"])
+
+# Create table object with specified table name
+table = db.Table(tableName)
 
 # Enable logging
 logging.basicConfig(
@@ -13,6 +31,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Stages of the conversation
 CANTEEN, REQUESTS, ROLE, RESTART = range(4)
 
 # Define ConversationHandler.END in another variable for clarity.
@@ -33,7 +52,6 @@ def processRequests(available_requests, selected_canteen):
             formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: SGD${tip_amount}\n\n"
     
     return formatted_output
-
 
 async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Get the role selected from the user.

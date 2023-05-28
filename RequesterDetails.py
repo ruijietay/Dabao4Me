@@ -11,7 +11,6 @@ import configparser
 config = configparser.ConfigParser()
 config.read("config.ini")
 
-
 # Load bot token
 bot_token = config["bot_keys"]["test_bot_token"]
 
@@ -33,7 +32,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-NAME, CANTEEN, FOOD, OFFER_PRICE, ROLE = range(5)
+# Stages of the conversation
+CANTEEN, FOOD, OFFER_PRICE, ROLE = range(4)
 
 # Define ConversationHandler.END in another variable for clarity.
 ENDRequesterConv = ConversationHandler.END
