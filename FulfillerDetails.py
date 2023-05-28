@@ -4,6 +4,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 import logging
 import MainMenu
 import boto3
+from boto3.dynamodb.conditions import Key
 import configparser
 
 # Create config parser and read config file
@@ -13,14 +14,14 @@ config.read("config.ini")
 # Load bot token
 bot_token = config["bot_keys"]["test_bot_token"]
 
-# The name of our table in DynamoDB
-tableName = "Dabao4Me_Requests"
-
 # Create resource object to access DynamoDB
 db = boto3.resource('dynamodb', 
                     region_name = config["dynamodb"]["region_name"], 
                     aws_access_key_id = config["dynamodb"]["aws_access_key_id"],
                     aws_secret_access_key = config["dynamodb"]["aws_secret_access_key"])
+
+# The name of our table in DynamoDB
+tableName = "Dabao4Me_Requests"
 
 # Create table object with specified table name
 table = db.Table(tableName)
@@ -37,6 +38,7 @@ CANTEEN, REQUESTS, ROLE, RESTART = range(4)
 # Define ConversationHandler.END in another variable for clarity.
 ENDFulfillerConv = ConversationHandler.END
 
+# Get and format requests from python storage 
 def processRequests(available_requests, selected_canteen):
 
     formatted_output = ""
@@ -52,6 +54,26 @@ def processRequests(available_requests, selected_canteen):
             formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: SGD${tip_amount}\n\n"
     
     return formatted_output
+
+# Get and format requests from DynamoDB
+def processRequests(canteen):
+    formatted_output = ""
+
+    response = table.query(IndexName = 'canteen-index',
+                           KeyConditionExpression = Key('canteen').eq(canteen))
+    
+    logger.info("DynamoDB query response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
+
+    for request in response["Items"]:
+        formattedCanteen = MainMenu.canteenDict[canteen]
+        username = request["requester_telegram_username"]
+        food = request["food"]
+        tip_amount = request["tip_amount"]
+
+        formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: SGD${tip_amount}\n\n"
+    
+    return formatted_output
+
 
 async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Get the role selected from the user.
@@ -101,7 +123,8 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.info("Canteen of %s: %s", user.first_name, update.callback_query.data)
 
     # Show list of available requests, filtered by the selected canteen.
-    await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(MainMenu.available_requests, selectedCanteen))
+    # await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(MainMenu.available_requests, selectedCanteen))
+    await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(selectedCanteen))
 
     await update.callback_query.message.reply_text("To restart, send /start again.")
 
