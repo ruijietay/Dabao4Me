@@ -1,11 +1,31 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters, ConversationHandler
+from datetime import datetime
 
 import logging
-import keys
 import MainMenu
+import boto3
+import configparser
 
-bot_token = keys.bot_token
+# Create config parser and read config file
+config = configparser.ConfigParser()
+config.read("config.ini")
+
+
+# Load bot token
+bot_token = config["bot_keys"]["test_bot_token"]
+
+# The name of our table in DynamoDB
+mainTable = "Dabao4Me_Requests"
+
+# Create resource object to access DynamoDB
+db = boto3.resource('dynamodb', 
+                    region_name = config["dynamodb"]["region_name"], 
+                    aws_access_key_id = config["dynamodb"]["aws_access_key_id"],
+                    aws_secret_access_key = config["dynamodb"]["aws_secret_access_key"])
+
+# Create table object with specified table name
+table = db.Table(mainTable)
 
 # Enable logging
 logging.basicConfig(
@@ -151,8 +171,14 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "tip_amount" : context.user_data[OFFER_PRICE]
     })
 
-    await update.message.reply_text(parse_mode="MarkdownV2", text="Request placed\! \n__*Summary*__ " + 
-        "\nCanteen: " + MainMenu.canteenDict[context.user_data[CANTEEN]] + 
+    # RequestID
+    requestID = "{}{}".format(datetime.now().timestamp(), update.effective_user.name)
+
+    # print(requestID)
+
+    await update.message.reply_text(parse_mode="MarkdownV2", 
+                                    text="Request placed\! \n__*Summary*__ " + 
+                                    "\nCanteen: " + MainMenu.canteenDict[context.user_data[CANTEEN]] + 
                                     "\nFood: " + context.user_data[FOOD] +
                                     "\nTip Amount: SGD$" + context.user_data[OFFER_PRICE])
     
