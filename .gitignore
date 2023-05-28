@@ -3,6 +3,7 @@ __pycache__
 keys.py
 nestedconversationbot.py
 keys.py
+config.ini
 
 # Ignore python cache directory
 **/__pycache__/
