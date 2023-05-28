@@ -16,7 +16,7 @@ config.read("config.ini")
 bot_token = config["bot_keys"]["test_bot_token"]
 
 # The name of our table in DynamoDB
-mainTable = "Dabao4Me_Requests"
+tableName = "Dabao4Me_Requests"
 
 # Create resource object to access DynamoDB
 db = boto3.resource('dynamodb', 
@@ -25,7 +25,7 @@ db = boto3.resource('dynamodb',
                     aws_secret_access_key = config["dynamodb"]["aws_secret_access_key"])
 
 # Create table object with specified table name
-table = db.Table(mainTable)
+table = db.Table(tableName)
 
 # Enable logging
 logging.basicConfig(
@@ -171,10 +171,38 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "tip_amount" : context.user_data[OFFER_PRICE]
     })
 
-    # RequestID
+
+
+
+    # Columns in our DynamoDB table
+    columns = ["RequestID", "requester_telegram_username", "canteen", "food", "tip_amount"]
+
+    # RequestID which consists of time + telegram username
     requestID = "{}{}".format(datetime.now().timestamp(), update.effective_user.name)
 
-    # print(requestID)
+    # Function to put item in table
+    def put_item(requestID, requester_telegram_username, canteen, food, tip_amount):
+        data = {
+            columns[0]: requestID,
+            columns[1]: requester_telegram_username,
+            columns[2]: canteen,
+            columns[3]: food,
+            columns[4]: tip_amount
+        }
+
+        response = table.put_item(Item = data)
+
+        logger.info("DynamoDB put_item response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
+
+    # Actually put item in table
+    put_item(requestID, 
+             update.effective_user.name, 
+             context.user_data[CANTEEN], 
+             context.user_data[FOOD], 
+             context.user_data[OFFER_PRICE])
+
+
+
 
     await update.message.reply_text(parse_mode="MarkdownV2", 
                                     text="Request placed\! \n__*Summary*__ " + 
