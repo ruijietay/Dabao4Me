@@ -47,7 +47,7 @@ async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # Store information about their role.
     user = update.callback_query.from_user
-    logger.info("Role of %s: %s", user.first_name, update.callback_query.message)
+    logger.info("Role of %s: %s", user.first_name, update.callback_query.data)
 
     await update.callback_query.message.reply_text(text=f"You have chosen to be a {roleSelected}.")
 
@@ -80,7 +80,7 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # Store information about their name.
     user = update.callback_query.from_user
-    logger.info("Fulfiller %s selected %s as their canteen.", user.first_name, update.callback_query.message)
+    logger.info("Canteen of %s: %s", user.first_name, update.callback_query.data)
 
     # Show list of available requests, filtered by the selected canteen.
     await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(MainMenu.available_requests, selectedCanteen))

@@ -97,7 +97,7 @@ async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # Store information about their role.
     user = update.callback_query.from_user
-    logger.info("Role of %s: %s", user.first_name, update.callback_query.message)
+    logger.info("Role of %s: %s", user.first_name, update.callback_query.data)
 
     await update.callback_query.message.reply_text(text=f"You have chosen to be a {roleSelected}.")
 
@@ -130,7 +130,7 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # Store information about their name.
     user = update.callback_query.from_user
-    logger.info("Requester %s selected %s as their canteen.", user.first_name, update.callback_query.message)  # why is this not update.callback_query.data? (or canteenSelected for that matter)
+    logger.info("Canteen of %s: %s ", user.first_name, update.callback_query.data)
 
     await update.callback_query.message.reply_text("Great! Now, please state the food you'd like to order.")
 
