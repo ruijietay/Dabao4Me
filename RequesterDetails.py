@@ -7,12 +7,28 @@ import MainMenu
 import boto3
 import configparser
 
+####################################### Parameters #######################################
+
 # Create config parser and read config file
 config = configparser.ConfigParser()
 config.read("config.ini")
 
 # Load bot token
 bot_token = config["bot_keys"]["test_bot_token"]
+
+# Stages of the conversation
+CANTEEN, FOOD, OFFER_PRICE, ROLE = range(4)
+
+# Define ConversationHandler.END in another variable for clarity.
+ENDRequesterConv = ConversationHandler.END
+
+# Enable logging
+logging.basicConfig(
+    format="%(asctime)s | %(name)s | %(levelname)s | %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+########## Initialising DB and Required Tables ##########
 
 # The name of our table in DynamoDB
 tableName = "Dabao4Me_Requests"
@@ -23,67 +39,26 @@ db = boto3.resource('dynamodb',
                     aws_access_key_id = config["dynamodb"]["aws_access_key_id"],
                     aws_secret_access_key = config["dynamodb"]["aws_secret_access_key"])
 
-# Create table object with specified table name
+# Create table object with specified table name (the request table)
 table = db.Table(tableName)
 
-# Enable logging
-logging.basicConfig(
-    format="%(asctime)s | %(name)s | %(levelname)s | %(message)s", level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+####################################### Helper Functions #######################################
 
-# Stages of the conversation
-CANTEEN, FOOD, OFFER_PRICE, ROLE = range(4)
+# Function to put item in a given table
+def put_item(table, cols, requestID, requester_telegram_username, canteen, food, tip_amount):
+    data = {
+        cols[0]: requestID,
+        cols[1]: requester_telegram_username,
+        cols[2]: canteen,
+        cols[3]: food,
+        cols[4]: tip_amount
+    }
+    
+    response = table.put_item(Item = data)
 
-# Define ConversationHandler.END in another variable for clarity.
-ENDRequesterConv = ConversationHandler.END
+    return response
 
-# async def getDetails(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-#     # Various function calls to get relevant details.
-#     if (update.callback_query.data == "requester"):
-#         # conv_handler_req = ConversationHandler(entry_points=[MessageHandler("requester", requesterName)],
-#         #                                        states={
-#         #                                            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterName)],
-#         #                                            CANTEEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterCanteen)],
-#         #                                            FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterFood)],
-#         #                                            OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, requesterPrice)],
-#         #                                        },
-#         #                                        fallbacks=MenuHandler.unknown)
-
-#         await update.message.reply_text("Alright! Now, please state your name.")
-
-#         requesterNameField = update.message.text
-
-#         # Store information about their name.
-#         user = update.message.from_user
-#         logger.info("Name of %s: %s", user.first_name, requesterNameField)
-
-#         return NAME
-        
-# async def requesterName(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-#     requesterNameField = update.message.text
-
-#     # Store information about their name.
-#     user = update.message.from_user
-#     logger.info("Name of %s: %s", user.first_name, requesterNameField)
-
-#     # Define the canteens using a 2D array.
-#     inlineCanteen = [
-#         [InlineKeyboardButton("The Deck", callback_data="deck")],
-#         [InlineKeyboardButton("Frontier", callback_data="frontier")],
-#         [InlineKeyboardButton("Fine Foods", callback_data="fine_foods")],
-#         [InlineKeyboardButton("Flavours @ Utown", callback_data="flavours")],
-#         [InlineKeyboardButton("TechnoEdge", callback_data="technoedge")],
-#         [InlineKeyboardButton("PGPR", callback_data="pgpr")],
-#     ]
-
-
-#     # Transform the 2D array into an actual inline keyboard that can be interpreted by Telegram.
-#     inlineCanteenTG = InlineKeyboardMarkup(inlineCanteen)
-
-#     await update.message.reply_text("Now, please select from the list of canteens below.", reply_markup=inlineCanteenTG)
-
-#     return CANTEEN
+####################################### Main Functions #######################################
 
 async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Get the role selected from the user.
@@ -130,7 +105,7 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # Store information about their name.
     user = update.callback_query.from_user
-    logger.info("Canteen of %s: %s ", user.first_name, update.callback_query.data)
+    logger.info("Canteen selected by %s (%s): %s ", user.first_name, context.user_data[ROLE], update.callback_query.data)
 
     await update.callback_query.message.reply_text("Great! Now, please state the food you'd like to order.")
 
@@ -160,7 +135,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # Store information about their name.
     user = update.message.from_user
-    logger.info("Tip amount of %s: %s", user.first_name, requesterPrice)
+    logger.info("Tip amount set by of %s: %s", user.first_name, requesterPrice)
 
     # Put details of request into data structure.
     MainMenu.available_requests.append({
@@ -171,38 +146,22 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "tip_amount" : context.user_data[OFFER_PRICE]
     })
 
-
-
-
-    # Columns in our DynamoDB table
-    columns = ["RequestID", "requester_telegram_username", "canteen", "food", "tip_amount"]
-
     # RequestID which consists of time + telegram username
     requestID = "{}{}".format(datetime.now().timestamp(), update.effective_user.name)
 
-    # Function to put item in table
-    def put_item(requestID, requester_telegram_username, canteen, food, tip_amount):
-        data = {
-            columns[0]: requestID,
-            columns[1]: requester_telegram_username,
-            columns[2]: canteen,
-            columns[3]: food,
-            columns[4]: tip_amount
-        }
-
-        response = table.put_item(Item = data)
-
-        logger.info("DynamoDB put_item response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
-
+    # Columns in the request table in DynamoDB
+    columns = ["RequestID", "requester_telegram_username", "canteen", "food", "tip_amount"]
+    
     # Actually put item in table
-    put_item(requestID, 
-             update.effective_user.name, 
-             context.user_data[CANTEEN], 
-             context.user_data[FOOD], 
-             context.user_data[OFFER_PRICE])
-
-
-
+    response = put_item(table,
+                        columns,
+                        requestID, 
+                        update.effective_user.name, 
+                        context.user_data[CANTEEN], 
+                        context.user_data[FOOD], 
+                        context.user_data[OFFER_PRICE])
+    
+    logger.info("DynamoDB put_item response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
     await update.message.reply_text(parse_mode="MarkdownV2", 
                                     text="Request placed\! \n__*Summary*__ " + 
@@ -211,6 +170,5 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                                     "\nTip Amount: SGD$" + context.user_data[OFFER_PRICE])
     
     await update.message.reply_text("To restart, send /start again.")
-
 
     return ENDRequesterConv

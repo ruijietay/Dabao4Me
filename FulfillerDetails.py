@@ -12,7 +12,7 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 
 # Load bot token
-bot_token = config["bot_keys"]["test_bot_token"]
+bot_token = config["bot_keys"]["current_bot_token"]
 
 # Create resource object to access DynamoDB
 db = boto3.resource('dynamodb', 
