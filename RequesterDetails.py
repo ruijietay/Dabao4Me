@@ -160,7 +160,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # Store information about their name.
     user = update.message.from_user
-    logger.info("Food of %s: %s", user.first_name, requesterPrice)
+    logger.info("Tip amount of %s: %s", user.first_name, requesterPrice)
 
     # Put details of request into data structure.
     MainMenu.available_requests.append({
