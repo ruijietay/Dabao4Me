@@ -4,11 +4,16 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters, ConversationHandler
 
 import logging
-import keys
 import RequesterDetails
 import FulfillerDetails
+import configparser
 
-bot_token = keys.bot_token
+# Create config parser and read config file
+config = configparser.ConfigParser()
+config.read("config.ini")
+
+# Load bot token
+bot_token = config["bot_keys"]["current_bot_token"]
 
 # Enable logging
 logging.basicConfig(
