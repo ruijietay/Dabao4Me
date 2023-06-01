@@ -9,3 +9,6 @@ MenuHandler_Old.py
 
 # Ignore python cache directory
 **/__pycache__/
+
+# Ignore test folder
+**/test/
