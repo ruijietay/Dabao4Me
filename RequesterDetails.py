@@ -164,7 +164,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     logger.info("DynamoDB put_item response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
     await update.message.reply_text(parse_mode="MarkdownV2", 
-                                    text="Request placed\! \n__*Summary*__ " + 
+                                    text="Request placed\! \n\n__*Summary*__ " + 
                                     "\nCanteen: " + MainMenu.canteenDict[context.user_data[CANTEEN]] + 
                                     "\nFood: " + context.user_data[FOOD] +
                                     "\nTip Amount: SGD$" + context.user_data[OFFER_PRICE])

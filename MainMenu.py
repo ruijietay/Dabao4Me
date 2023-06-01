@@ -37,14 +37,14 @@ canteenDict = {
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Define the menu using a 2D array.
     inlineMenu = [
-        [InlineKeyboardButton("Requester", callback_data="requester")],
-        [InlineKeyboardButton("Fulfiller", callback_data="fulfiller")],
+        [InlineKeyboardButton("Request an order", callback_data="requester")],
+        [InlineKeyboardButton("Fulfil an order", callback_data="fulfiller")],
     ]
 
     # Transform the 2D array into an actual inline keyboard that can be interpreted by Telegram.
     inlineMenuTG = InlineKeyboardMarkup(inlineMenu)
 
-    await update.message.reply_text("Welcome to Dabao4Me! Please choose your role:", reply_markup=inlineMenuTG)
+    await update.message.reply_text("Welcome to Dabao4Me! What would you like to do today?:", reply_markup=inlineMenuTG)
 
     return ROLE
 
