@@ -14,7 +14,7 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 
 # Load bot token
-bot_token = config["bot_keys"]["test_bot_token"]
+bot_token = config["bot_keys"]["current_bot_token"]
 
 # Stages of the conversation
 CANTEEN, FOOD, OFFER_PRICE, ROLE = range(4)

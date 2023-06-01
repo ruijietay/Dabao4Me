@@ -6,6 +6,7 @@ import MainMenu
 import boto3
 from boto3.dynamodb.conditions import Key
 import configparser
+from datetime import datetime
 
 ####################################### Parameters #######################################
 
@@ -74,11 +75,21 @@ def processRequests(canteen):
 
     for request in response["Items"]:
         formattedCanteen = MainMenu.canteenDict[canteen]
+        requestID = request["RequestID"]
+        unixTimestamp = float(requestID[:17])
         username = request["requester_telegram_username"]
         food = request["food"]
         tip_amount = request["tip_amount"]
 
-        formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: SGD${tip_amount}\n\n"
+        formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime('%d %b %y  %I:%M %p')
+
+        formatted_output += f"""Requested on: {formattedTimestamp}
+Username: {username}
+Canteen: {formattedCanteen}
+Food: {food}
+Tip Amount: ${tip_amount}
+
+"""
     
     return formatted_output
 
