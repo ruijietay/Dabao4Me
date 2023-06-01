@@ -1,10 +1,11 @@
-# We should exclude the file that contains all our tokens 
+# Files to exclude
 __pycache__
 keys.py
 nestedconversationbot.py
 keys.py
 config.ini
 DynamoDBTest.py
+MenuHandler_Old.py
 
 # Ignore python cache directory
 **/__pycache__/
