@@ -1,8 +1,10 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters, ConversationHandler
 from datetime import datetime
+from decimal import Decimal
 
 import logging
+import re
 import MainMenu
 import boto3
 import configparser
@@ -122,20 +124,26 @@ async def requesterFood(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user = update.message.from_user
     logger.info("Food of %s: %s", user.first_name, requesterFood)
 
-    await update.message.reply_text("Finally, how much would you like to tip the fulfiller for your request? (excluding food prices)")
+    await update.message.reply_text("Finally, how much would you like to tip the fulfiller for your request? (excluding food prices, to the nearest cents)")
 
     return OFFER_PRICE
 
 async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    tip_pattern = r'^\d+(\.\d{1,2})?$'
+
+    if not re.match(tip_pattern, update.message.text):
+        await update.message.reply_text("Sorry, you have entered an invalid input. Please try again.")
+        return OFFER_PRICE
+    
     # Get the tipping amount from the requester.
-    requesterPrice = update.message.text
+    requesterPrice = Decimal(update.message.text)
 
     # Store the input of the requester's tipping amount into user_data.
     context.user_data[OFFER_PRICE] = requesterPrice
 
     # Store information about their name.
     user = update.message.from_user
-    logger.info("Tip amount set by %s: %s", user.first_name, requesterPrice)
+    logger.info("Tip amount set by %s: %f", user.first_name, requesterPrice)
 
     # Put details of request into data structure.
     MainMenu.available_requests.append({
@@ -163,11 +171,11 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     logger.info("DynamoDB put_item response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
-    await update.message.reply_text(parse_mode="MarkdownV2", 
-                                    text="Request placed\! \n__*Summary*__ " + 
+    await update.message.reply_text(parse_mode="HTML", 
+                                    text="Request placed! \n<b><u>Summary</u></b>" + 
                                     "\nCanteen: " + MainMenu.canteenDict[context.user_data[CANTEEN]] + 
                                     "\nFood: " + context.user_data[FOOD] +
-                                    "\nTip Amount: SGD$" + context.user_data[OFFER_PRICE])
+                                    "\nTip Amount: SGD$" + str(context.user_data[OFFER_PRICE]))
     
     await update.message.reply_text("To restart, send /start again.")
 
