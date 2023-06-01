@@ -7,24 +7,14 @@ import boto3
 from boto3.dynamodb.conditions import Key
 import configparser
 
+####################################### Parameters #######################################
+
 # Create config parser and read config file
 config = configparser.ConfigParser()
 config.read("config.ini")
 
 # Load bot token
 bot_token = config["bot_keys"]["current_bot_token"]
-
-# Create resource object to access DynamoDB
-db = boto3.resource('dynamodb', 
-                    region_name = config["dynamodb"]["region_name"], 
-                    aws_access_key_id = config["dynamodb"]["aws_access_key_id"],
-                    aws_secret_access_key = config["dynamodb"]["aws_secret_access_key"])
-
-# The name of our table in DynamoDB
-tableName = "Dabao4Me_Requests"
-
-# Create table object with specified table name
-table = db.Table(tableName)
 
 # Enable logging
 logging.basicConfig(
@@ -37,6 +27,24 @@ CANTEEN, REQUESTS, ROLE, RESTART = range(4)
 
 # Define ConversationHandler.END in another variable for clarity.
 ENDFulfillerConv = ConversationHandler.END
+
+########## Initialising DB and Required Tables ##########
+
+# The name of our table in DynamoDB
+tableName = "Dabao4Me_Requests"
+
+# Create resource object to access DynamoDB
+db = boto3.resource('dynamodb', 
+                    region_name = config["dynamodb"]["region_name"], 
+                    aws_access_key_id = config["dynamodb"]["aws_access_key_id"],
+                    aws_secret_access_key = config["dynamodb"]["aws_secret_access_key"])
+
+
+# Create table object with specified table name
+table = db.Table(tableName)
+
+
+####################################### Helper Functions #######################################
 
 # Get and format requests from python storage 
 def processRequests(available_requests, selected_canteen):
@@ -74,6 +82,7 @@ def processRequests(canteen):
     
     return formatted_output
 
+####################################### Main Functions #######################################
 
 async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Get the role selected from the user.
