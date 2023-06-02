@@ -23,9 +23,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Stages of the conversation
-CANTEEN, REQUESTS, ROLE, RESTART = range(4)
-
 # Define ConversationHandler.END in another variable for clarity.
 ENDFulfillerConv = ConversationHandler.END
 
@@ -52,46 +49,53 @@ def processRequests(available_requests, selected_canteen):
 
     formatted_output = ""
     for requests in available_requests:
-        canteen = requests["canteen"]
+        formattedCanteen = MainMenu.canteenDict[selected_canteen]
+        username = requests["username"]
+        food = requests["food"]
+        tip_amount = requests["tip_amount"]
+        formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: SGD${tip_amount}\n\n"
+    
+    return formatted_output
+
+def filterRequests(available_requests, selected_canteen):
+
+    filteredRequests = []
+    for request in available_requests:
+        canteen = request["canteen"]
         
         if canteen == selected_canteen:
-            formattedCanteen = MainMenu.canteenDict[selected_canteen]
-            username = requests["username"]
-            food = requests["food"]
-            tip_amount = requests["tip_amount"]
+            filteredRequests.append(request)
 
-            formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: SGD${tip_amount}\n\n"
+    return filteredRequests
+
+# # Get and format requests from DynamoDB
+# def processRequests(canteen):
+#     formatted_output = ""
+
+#     response = table.query(IndexName = 'canteen-index',
+#                            KeyConditionExpression = Key('canteen').eq(canteen))
     
-    return formatted_output
+#     logger.info("DynamoDB query response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
-# Get and format requests from DynamoDB
-def processRequests(canteen):
-    formatted_output = ""
+#     for request in response["Items"]:
+#         formattedCanteen = MainMenu.canteenDict[canteen]
+#         requestID = request["RequestID"]
+#         unixTimestamp = float(requestID[:17])
+#         username = request["requester_telegram_username"]
+#         food = request["food"]
+#         tip_amount = request["tip_amount"]
 
-    response = table.query(IndexName = 'canteen-index',
-                           KeyConditionExpression = Key('canteen').eq(canteen))
+#         formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime('%d %b %y  %I:%M %p')
+
+#         formatted_output += f"""Requested on: {formattedTimestamp}
+# Username: {username}
+# Canteen: {formattedCanteen}
+# Food: {food}
+# Tip Amount: ${tip_amount}
+
+# """
     
-    logger.info("DynamoDB query response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
-
-    for request in response["Items"]:
-        formattedCanteen = MainMenu.canteenDict[canteen]
-        requestID = request["RequestID"]
-        unixTimestamp = float(requestID[:17])
-        username = request["requester_telegram_username"]
-        food = request["food"]
-        tip_amount = request["tip_amount"]
-
-        formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime('%d %b %y  %I:%M %p')
-
-        formatted_output += f"""Requested on: {formattedTimestamp}
-Username: {username}
-Canteen: {formattedCanteen}
-Food: {food}
-Tip Amount: ${tip_amount}
-
-"""
-    
-    return formatted_output
+#     return formatted_output
 
 ####################################### Main Functions #######################################
 
@@ -100,7 +104,7 @@ async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     roleSelected = update.callback_query.data
 
     # Store the input of the user's role into user_data.
-    context.user_data[ROLE] = roleSelected
+    context.user_data[MainMenu.ROLE] = roleSelected
 
     # Once the user clicks a button, we need to "answer" the CallbackQuery.
     await update.callback_query.answer()
@@ -126,14 +130,14 @@ async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     await update.callback_query.message.reply_text("Now, please select from the list of canteens.", reply_markup=inlineCanteenTG)
 
-    return CANTEEN
+    return MainMenu.CANTEEN
 
 async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Get the canteen selected from the fulfiller.
     selectedCanteen = update.callback_query.data
 
     # Store the input of the fulfiller's canteen into user_data
-    context.user_data[CANTEEN] = selectedCanteen
+    context.user_data[MainMenu.CANTEEN] = selectedCanteen
 
     # Once the user clicks a button, we need to "answer" the CallbackQuery.
     await update.callback_query.answer()
@@ -144,9 +148,9 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # Show list of available requests, filtered by the selected canteen.
     
-    # await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(MainMenu.available_requests, selectedCanteen))
-    await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(selectedCanteen))
+    await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(filterRequests(MainMenu.available_requests, selectedCanteen), selectedCanteen))
+    # await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(selectedCanteen))
 
-    await update.callback_query.message.reply_text("To restart, send /start again.")
+    await update.callback_query.message.reply_text("To fulfill a request, use the /fulfill command, followed by the request number.")
 
-    return ENDFulfillerConv
+    return MainMenu.FULFILL_REQUEST

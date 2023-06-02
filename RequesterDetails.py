@@ -18,9 +18,6 @@ config.read("config.ini")
 # Load bot token
 bot_token = config["bot_keys"]["current_bot_token"]
 
-# Stages of the conversation
-CANTEEN, FOOD, OFFER_PRICE, ROLE = range(4)
-
 # Define ConversationHandler.END in another variable for clarity.
 ENDRequesterConv = ConversationHandler.END
 
@@ -67,7 +64,7 @@ async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     roleSelected = update.callback_query.data
 
     # Store the input of the user's role into user_data.
-    context.user_data[ROLE] = roleSelected
+    context.user_data[MainMenu.ROLE] = roleSelected
 
     # Once the user clicks a button, we need to "answer" the CallbackQuery.
     await update.callback_query.answer()
@@ -93,32 +90,32 @@ async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     await update.callback_query.message.reply_text("Now, please select from the list of canteens.", reply_markup=inlineCanteenTG)
 
-    return CANTEEN
+    return MainMenu.CANTEEN
 
 async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Get the canteen selected from the requester.
     canteenSelected = update.callback_query.data
 
     # Store the input of the requester's canteen into user_data
-    context.user_data[CANTEEN] = canteenSelected
+    context.user_data[MainMenu.CANTEEN] = canteenSelected
 
     # Once the user clicks a button, we need to "answer" the CallbackQuery.
     await update.callback_query.answer()
 
     # Store information about their name.
     user = update.callback_query.from_user
-    logger.info("Canteen selected by %s (%s): %s ", user.first_name, context.user_data[ROLE], update.callback_query.data)
+    logger.info("Canteen selected by %s (%s): %s ", user.first_name, context.user_data[MainMenu.ROLE], update.callback_query.data)
 
     await update.callback_query.message.reply_text("Great! Now, please state the food you'd like to order.")
 
-    return FOOD
+    return MainMenu.FOOD
 
 async def requesterFood(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:    
     # Get the food requested from the requester.
     requesterFood = update.message.text
 
     # Store the input of the requester's choice of food into user_data
-    context.user_data[FOOD] = requesterFood
+    context.user_data[MainMenu.FOOD] = requesterFood
 
     # Store information about their name.
     user = update.message.from_user
@@ -126,20 +123,20 @@ async def requesterFood(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     await update.message.reply_text("Finally, how much would you like to tip the fulfiller for your request? (excluding food prices, to the nearest cents)")
 
-    return OFFER_PRICE
+    return MainMenu.OFFER_PRICE
 
 async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     tip_pattern = r'^\d+(\.\d{1,2})?$'
 
     if not re.match(tip_pattern, update.message.text):
         await update.message.reply_text("Sorry, you have entered an invalid input. Please try again.")
-        return OFFER_PRICE
+        return MainMenu.OFFER_PRICE
     
     # Get the tipping amount from the requester.
     requesterPrice = Decimal(update.message.text)
 
     # Store the input of the requester's tipping amount into user_data.
-    context.user_data[OFFER_PRICE] = requesterPrice
+    context.user_data[MainMenu.OFFER_PRICE] = requesterPrice
 
     # Store information about their name.
     user = update.message.from_user
@@ -149,9 +146,11 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     MainMenu.available_requests.append({
         # Potential Issue: Not every telegram account has a username.
         "username" : update.effective_user.name,
-        "canteen" : context.user_data[CANTEEN],
-        "food" : context.user_data[FOOD],
-        "tip_amount" : context.user_data[OFFER_PRICE]
+        "canteen" : context.user_data[MainMenu.CANTEEN],
+        "food" : context.user_data[MainMenu.FOOD],
+        "tip_amount" : context.user_data[MainMenu.OFFER_PRICE],
+        "chat_id" : update.effective_user.id,
+        "fulfiller" : ""
     })
 
     # RequestID which consists of time + telegram username
@@ -160,23 +159,23 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Columns in the request table in DynamoDB
     columns = ["RequestID", "requester_telegram_username", "canteen", "food", "tip_amount"]
     
-    # Actually put item in table
+    # Put item in table
     response = put_item(table,
                         columns,
                         requestID, 
                         update.effective_user.name, 
-                        context.user_data[CANTEEN], 
-                        context.user_data[FOOD], 
-                        context.user_data[OFFER_PRICE])
+                        context.user_data[MainMenu.CANTEEN], 
+                        context.user_data[MainMenu.FOOD], 
+                        context.user_data[MainMenu.OFFER_PRICE])
     
     logger.info("DynamoDB put_item response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
     await update.message.reply_text(parse_mode="HTML", 
                                     text="Request placed! \n<b><u>Summary</u></b>" + 
-                                    "\nCanteen: " + MainMenu.canteenDict[context.user_data[CANTEEN]] + 
-                                    "\nFood: " + context.user_data[FOOD] +
-                                    "\nTip Amount: SGD$" + str(context.user_data[OFFER_PRICE]))
+                                    "\nCanteen: " + MainMenu.canteenDict[context.user_data[MainMenu.CANTEEN]] + 
+                                    "\nFood: " + context.user_data[MainMenu.FOOD] +
+                                    "\nTip Amount: SGD$" + str(context.user_data[MainMenu.OFFER_PRICE]))
     
-    await update.message.reply_text("To restart, send /start again.")
+    await update.message.reply_text("We will notify and connect you with a fulfiller when found.")
 
-    return ENDRequesterConv
+    return MainMenu.AWAIT_FULFILLER

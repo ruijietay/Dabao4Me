@@ -6,6 +6,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 import logging
 import RequesterDetails
 import FulfillerDetails
+import MatchingUsers
 import configparser
 
 # Create config parser and read config file
@@ -21,7 +22,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-ROLE, RESTART = range(2)
+RESTART, ROLE, CANTEEN, FOOD, OFFER_PRICE, AWAIT_FULFILLER, REQUESTS, FULFILL_REQUEST, FULFILLER_IN_CONVO, REQUEST_CHOSEN = range(10)
 
 available_requests = []
 
@@ -75,9 +76,10 @@ def main() -> None:
     requester_conv = ConversationHandler(
         entry_points = [CallbackQueryHandler(RequesterDetails.promptCanteen, pattern = "requester")],
         states  = {
-            RequesterDetails.CANTEEN: [CallbackQueryHandler(RequesterDetails.selectCanteen)],
-            RequesterDetails.FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterFood)],
-            RequesterDetails.OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterPrice)]
+            CANTEEN: [CallbackQueryHandler(RequesterDetails.selectCanteen)],
+            FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterFood)],
+            OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterPrice)],
+            AWAIT_FULFILLER: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.awaitFulfiller)]
         },
         fallbacks = [CommandHandler("cancel", cancel)],
         map_to_parent= {
@@ -88,7 +90,9 @@ def main() -> None:
     fulfiller_conv = ConversationHandler(
         entry_points = [CallbackQueryHandler(FulfillerDetails.promptCanteen , pattern = "fulfiller")],
         states = {
-            FulfillerDetails.CANTEEN: [CallbackQueryHandler(FulfillerDetails.selectCanteen)],
+            CANTEEN: [CallbackQueryHandler(FulfillerDetails.selectCanteen)],
+            FULFILL_REQUEST: [CommandHandler("fulfill", MatchingUsers.fulfillRequest)],
+            FULFILLER_IN_CONVO: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)]
         },
         fallbacks = [CommandHandler("cancel", cancel)],
         map_to_parent= {
