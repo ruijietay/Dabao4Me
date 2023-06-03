@@ -44,13 +44,14 @@ table = db.Table(tableName)
 ####################################### Helper Functions #######################################
 
 # Function to put item in a given table
-def put_item(table, cols, requestID, requester_telegram_username, canteen, food, tip_amount):
+def put_item(table, cols, requestID, requester_telegram_username, canteen, food, tip_amount, status):
     data = {
         cols[0]: requestID,
         cols[1]: requester_telegram_username,
         cols[2]: canteen,
         cols[3]: food,
-        cols[4]: tip_amount
+        cols[4]: tip_amount,
+        cols[5]: status
     }
     
     response = table.put_item(Item = data)
@@ -121,7 +122,7 @@ async def requesterFood(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user = update.message.from_user
     logger.info("Food of %s: %s", user.first_name, requesterFood)
 
-    await update.message.reply_text("Finally, how much would you like to tip the fulfiller for your request? (excluding food prices, to the nearest cents)")
+    await update.message.reply_text("Finally, how much would you like to tip the fulfiller for your request? (excluding food prices, to the nearest cent)")
 
     return MainMenu.OFFER_PRICE
 
@@ -140,7 +141,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # Store information about their name.
     user = update.message.from_user
-    logger.info("Tip amount set by %s: %f", user.first_name, requesterPrice)
+    logger.info("Tip amount set by %s: %0.2f", user.first_name, requesterPrice)
 
     # Put details of request into data structure.
     MainMenu.available_requests.append({
@@ -157,7 +158,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     requestID = "{}{}".format(datetime.now().timestamp(), update.effective_user.name)
 
     # Columns in the request table in DynamoDB
-    columns = ["RequestID", "requester_telegram_username", "canteen", "food", "tip_amount"]
+    columns = ["RequestID", "requester_telegram_username", "canteen", "food", "tip_amount", "status"]
     
     # Put item in table
     response = put_item(table,
@@ -166,7 +167,8 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                         update.effective_user.name, 
                         context.user_data[MainMenu.CANTEEN], 
                         context.user_data[MainMenu.FOOD], 
-                        context.user_data[MainMenu.OFFER_PRICE])
+                        context.user_data[MainMenu.OFFER_PRICE],
+                        "Available")
     
     logger.info("DynamoDB put_item response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
@@ -174,7 +176,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                                     text="Request placed! \n<b><u>Summary</u></b>" + 
                                     "\nCanteen: " + MainMenu.canteenDict[context.user_data[MainMenu.CANTEEN]] + 
                                     "\nFood: " + context.user_data[MainMenu.FOOD] +
-                                    "\nTip Amount: SGD$" + str(context.user_data[MainMenu.OFFER_PRICE]))
+                                    "\nTip Amount: $" + str(context.user_data[MainMenu.OFFER_PRICE]))
     
     await update.message.reply_text("We will notify and connect you with a fulfiller when found.")
 
