@@ -53,7 +53,7 @@ def processRequests(available_requests, selected_canteen):
         username = requests["username"]
         food = requests["food"]
         tip_amount = requests["tip_amount"]
-        formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: SGD${tip_amount}\n\n"
+        formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: ${tip_amount}\n\n"
     
     return formatted_output
 
