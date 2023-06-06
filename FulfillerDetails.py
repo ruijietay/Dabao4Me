@@ -23,9 +23,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Define ConversationHandler.END in another variable for clarity.
-ENDFulfillerConv = ConversationHandler.END
-
 ########## Initialising DB and Required Tables ##########
 
 # The name of our table in DynamoDB
@@ -50,7 +47,7 @@ def processRequests(available_requests, selected_canteen):
     formatted_output = ""
     for requests in available_requests:
         formattedCanteen = MainMenu.canteenDict[selected_canteen]
-        username = requests["username"]
+        username = requests["requester_user_name"]
         food = requests["food"]
         tip_amount = requests["tip_amount"]
         formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: ${tip_amount}\n\n"
@@ -72,8 +69,8 @@ def filterRequests(available_requests, selected_canteen):
 # def processRequests(canteen):
 #     formatted_output = ""
 
-#     response = table.query(IndexName = 'canteen-index',
-#                            KeyConditionExpression = Key('canteen').eq(canteen))
+#     response = table.query(IndexName = "canteen-index",
+#                            KeyConditionExpression = Key("canteen").eq(canteen))
     
 #     logger.info("DynamoDB query response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
@@ -85,7 +82,7 @@ def filterRequests(available_requests, selected_canteen):
 #         food = request["food"]
 #         tip_amount = request["tip_amount"]
 
-#         formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime('%d %b %y  %I:%M %p')
+#         formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime("%d %b %y  %I:%M %p")
 
 #         formatted_output += f"""Requested on: {formattedTimestamp}
 # Username: {username}
@@ -111,7 +108,7 @@ async def promptCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # Store information about their role.
     user = update.callback_query.from_user
-    logger.info("Role of %s: %s", user.first_name, update.callback_query.data)
+    logger.info("Role of '%s' (chat_id: '%s'): '%s'", update.effective_user.name, update.effective_user.id, update.callback_query.data)
 
     await update.callback_query.message.reply_text(text=f"You have chosen to be a {roleSelected}.")
 
@@ -136,21 +133,25 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # Get the canteen selected from the fulfiller.
     selectedCanteen = update.callback_query.data
 
+    # Let user know their selected canteen.
+    await update.callback_query.message.reply_text(text=f"You have chosen {MainMenu.canteenDict[update.callback_query.data]} as your canteen.")
+
     # Store the input of the fulfiller's canteen into user_data
     context.user_data[MainMenu.CANTEEN] = selectedCanteen
 
     # Once the user clicks a button, we need to "answer" the CallbackQuery.
     await update.callback_query.answer()
 
-    # Store information about their name.
-    user = update.callback_query.from_user
-    logger.info("Canteen of %s: %s", user.first_name, update.callback_query.data)
+    # Store information about their canteen
+    logger.info("Fulfiller '%s' (chat_id: '%s') selected '%s' as their canteen.", update.effective_user.name, update.effective_user.id, update.callback_query.data)
 
     # Show list of available requests, filtered by the selected canteen.
-    
+    # 1. Using local python storage
     await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(filterRequests(MainMenu.available_requests, selectedCanteen), selectedCanteen))
+
+    # 2. Using DyanmoDB
     # await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(selectedCanteen))
 
-    await update.callback_query.message.reply_text("To fulfill a request, use the /fulfill command, followed by the request number.")
+    await update.callback_query.message.reply_text("To fulfill a request, use the /fulfil command, followed by the request number.")
 
-    return MainMenu.FULFILL_REQUEST
+    return MainMenu.FULFIL_REQUEST
