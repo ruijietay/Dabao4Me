@@ -201,10 +201,10 @@ async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     context.user_data[MainMenu.REQUEST_CHOSEN] = FulfillerDetails.get_item(selectedRequest["RequestID"])["Item"]
 
     # Send message to fulfiller to indicate connection to the requester.
-    await update.message.reply_text("You are now connected with the requester!")
+    await update.message.reply_text("You are now connected with the requester! Use /end to end the conversation at any time.")
 
     # Send message to requester to indicate connection to the fulfiller.
-    await context.bot.send_message(chat_id=selectedRequest["requester_chat_id"], text="Fulfiller found!. You are now connected with the fulfiller!")
+    await context.bot.send_message(chat_id=selectedRequest["requester_chat_id"], text="Fulfiller found!. You are now connected with the fulfiller! Use /end to end the conversation at any time.")
 
     # Store information about the event.
     logger.info("Fulfiller '%s' (chat_id: '%s') started a conversation with '%s' (chat_id: '%s').", selectedRequest["fulfiller_user_name"], selectedRequest["fulfiller_chat_id"],
