@@ -42,13 +42,13 @@ async def awaitFulfiller(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     response = FulfillerDetails.get_item(context.user_data[MainMenu.REQUEST_MADE]["RequestID"])
 
     # Check the status of the chat (i.e. finding fulfiller, in-convo, or cancelled). If fulfiller not found, return back to awaitFulfiller method.
-    if (response["Item"]["chat_status"] == "await"):
+    if (response["Item"]["request_status"] == "Available"):
         
         # TODO: delete request when user uses /cancel here. (EDIT: implement using conv_handler in MainMenu using command handlers)
         await update.message.reply_text("We are still trying to find a fulfiller. Please wait, or use /cancel to quit.")
 
         return MainMenu.AWAIT_FULFILLER
-    elif (response["Item"]["chat_status"] == "connected"):
+    elif (response["Item"]["request_status"] == "In Progress"):
         # Get the message the requester is trying to send to the fulfiller
         requesterMsg = update.message.text
 
@@ -76,19 +76,19 @@ async def fulfillerEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     # Get the request the fulfiller has chosen.
     request = response["Item"]
 
-    # Update chat_status in DynamoDB to "end".
+    # Update request_status in DynamoDB to "Closed".
     response = FulfillerDetails.table.update_item(
         Key = {
             "RequestID": request["RequestID"]
         },
-        UpdateExpression = "SET chat_status = :status",
+        UpdateExpression = "SET request_status = :status",
         ExpressionAttributeValues = {
-            ":status" : "end"
+            ":status" : "Closed"
         }
     )
 
     # Update status for request variable before updating user_data
-    request['chat_status'] = "end"
+    request['request_status'] = "Closed"
     context.user_data[MainMenu.REQUEST_CHOSEN] = request
 
     logger.info("DynamoDB update_item response for RequestID '%s': '%s'", request["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
@@ -117,19 +117,19 @@ async def requesterEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     # Get the request the fulfiller has chosen.
     request = response["Item"]
 
-    # Update chat_status in DynamoDB to "end".
+    # Update request_status in DynamoDB to "Closed".
     response = FulfillerDetails.table.update_item(
         Key = {
             "RequestID": request["RequestID"]
         },
-        UpdateExpression = "SET chat_status = :status",
+        UpdateExpression = "SET request_status = :status",
         ExpressionAttributeValues = {
-            ":status" : "end"
+            ":status" : "Closed"
         }
     )
 
     # Update status for request variable before updating user_data
-    request['chat_status'] = "end"
+    request['request_status'] = "Closed"
     context.user_data[MainMenu.REQUEST_MADE] = request
 
     logger.info("DynamoDB update_item response for RequestID '%s': '%s'", request["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
@@ -168,18 +168,18 @@ async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         Key = {
             "RequestID": selectedRequest["RequestID"]
         },
-        UpdateExpression = "SET fulfiller_chat_id = :chat_id, fulfiller_user_name = :user_name, chat_status = :status",
+        UpdateExpression = "SET fulfiller_chat_id = :chat_id, fulfiller_user_name = :user_name, request_status = :status",
         ExpressionAttributeValues = {
             ":chat_id" : str(update.effective_user.id),
             ":user_name" : update.effective_user.name,
-            ":status" : "connected"
+            ":status" : "In Progress"
         }
     )
 
     # Update attributes for request variable before updating user_data
     selectedRequest['fulfiller_chat_id'] = str(update.effective_user.id)
     selectedRequest['fulfiller_user_name'] = update.effective_user.name
-    selectedRequest['chat_status'] = "connected"
+    selectedRequest['request_status'] = "In Progress"
     context.user_data[MainMenu.REQUEST_MADE] = selectedRequest
 
     logger.info("DynamoDB update_item response for RequestID '%s': '%s'", selectedRequest["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
@@ -226,7 +226,7 @@ async def forwardFulfillerMsg(update: Update, context: ContextTypes.DEFAULT_TYPE
     context.user_data[MainMenu.REQUEST_CHOSEN] = request
 
     # Check if requester has ended the chat before sending the message to the requester.
-    if (request["chat_status"] == "end"):
+    if (request["request_status"] == "Closed"):
         await update.message.reply_text(f"'{request['requester_user_name']}' has ended the conversation. Use /start to request or fulfill an order again.")
         return ENDConv
 
@@ -253,7 +253,7 @@ async def forwardRequesterMsg(update: Update, context: ContextTypes.DEFAULT_TYPE
     context.user_data[MainMenu.REQUEST_MADE] = request
     
     # Check if requester has ended the chat before sending the message to the requester.
-    if (request["chat_status"] == "end"):
+    if (request["request_status"] == "Closed"):
         await update.message.reply_text(f"'{request['fulfiller_user_name']}' has ended the conversation. Use /start to request or fulfill an order again.")
         return ENDConv
 
