@@ -6,6 +6,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 import logging
 import RequesterDetails
 import FulfillerDetails
+import MatchingUsers
 import configparser
 
 # Create config parser and read config file
@@ -21,7 +22,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-ROLE, RESTART = range(2)
+RESTART, ROLE, CANTEEN, FOOD, OFFER_PRICE, AWAIT_FULFILLER, REQUEST_MADE, FULFIL_REQUEST, FULFILLER_IN_CONVO, REQUEST_CHOSEN, REQUESTER_IN_CONVO = range(11)
 
 available_requests = []
 
@@ -52,13 +53,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Unknown command. Send /start to begin using the bot.")
 
+    # Store information about their action.
+    user = update.message.from_user
+    logger.info("'%s' (chat_id: '%s') sent an unknown command.", update.effective_user.name, update.effective_chat.id)
+
 
 # Method to cancel current transaction
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Current operation cancelled.")
-    # Store information about their name.
+
+    # Store information about their action.
     user = update.message.from_user
-    logger.info("%s cancelled a transaction.", user.first_name)
+    logger.info("'%s' (chat_id: '%s') cancelled a transation.", update.effective_user.name, update.effective_chat.id)
 
     return ConversationHandler.END
 
@@ -67,39 +73,70 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def invalidCancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=update.effective_chat.id, text="There is no ongoing operation to cancel.")
 
+    # Store information about their action.
+    user = update.message.from_user
+    logger.info("'%s' (chat_id: '%s') sent an invalid '/cancel' command.", update.effective_user.name, update.effective_chat.id)
+
 
 def main() -> None:
     # Create the Application and pass it your bot's token.
     application = Application.builder().token(bot_token).build()
 
-    requester_conv = ConversationHandler(
-        entry_points = [CallbackQueryHandler(RequesterDetails.promptCanteen, pattern = "requester")],
-        states  = {
-            RequesterDetails.CANTEEN: [CallbackQueryHandler(RequesterDetails.selectCanteen)],
-            RequesterDetails.FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterFood)],
-            RequesterDetails.OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterPrice)]
+    fulfiller_in_conv = ConversationHandler(
+        entry_points = [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg), CommandHandler("end", MatchingUsers.fulfillerEndConv)],
+        states = {
+            FULFILLER_IN_CONVO: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)]
         },
-        fallbacks = [CommandHandler("cancel", cancel)],
+        fallbacks = [CommandHandler("end", MatchingUsers.fulfillerEndConv)],
         map_to_parent= {
-            RequesterDetails.ENDRequesterConv : ConversationHandler.END
+            MatchingUsers.ENDConv : ConversationHandler.END
         }
     )
 
-    fulfiller_conv = ConversationHandler(
-        entry_points = [CallbackQueryHandler(FulfillerDetails.promptCanteen , pattern = "fulfiller")],
+    requester_in_conv = ConversationHandler(
+        entry_points = [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg), CommandHandler("end", MatchingUsers.requesterEndConv)],
         states = {
-            FulfillerDetails.CANTEEN: [CallbackQueryHandler(FulfillerDetails.selectCanteen)],
+            REQUESTER_IN_CONVO: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)]
+        },
+        fallbacks = [CommandHandler("end", MatchingUsers.requesterEndConv)],
+        map_to_parent= {
+            MatchingUsers.ENDConv : ConversationHandler.END
+        }
+    )
+
+    requester_init = ConversationHandler(
+        entry_points = [CallbackQueryHandler(RequesterDetails.promptCanteen, pattern = "requester")],
+        states  = {
+            CANTEEN: [CallbackQueryHandler(RequesterDetails.selectCanteen)],
+            FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterFood)],
+            OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterPrice)],
+            # TODO: include the command for "end" through messagehandler filters so that it can be passed onto the next conversationhandler in requester_in_conv
+            AWAIT_FULFILLER: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.awaitFulfiller), CommandHandler("end", MatchingUsers.requesterEndConv)],
+            REQUESTER_IN_CONVO: [requester_in_conv]
         },
         fallbacks = [CommandHandler("cancel", cancel)],
         map_to_parent= {
-            FulfillerDetails.ENDFulfillerConv : ConversationHandler.END
+            MatchingUsers.ENDRequesterConv : ConversationHandler.END
+        }
+    )
+
+    fulfiller_init = ConversationHandler(
+        entry_points = [CallbackQueryHandler(FulfillerDetails.promptCanteen , pattern = "fulfiller")],
+        states = {
+            CANTEEN: [CallbackQueryHandler(FulfillerDetails.selectCanteen)],
+            FULFIL_REQUEST: [CommandHandler("fulfil", MatchingUsers.fulfilRequest)],
+            FULFILLER_IN_CONVO: [fulfiller_in_conv]
+        },
+        fallbacks = [CommandHandler("cancel", cancel)],
+        map_to_parent= {
+            MatchingUsers.ENDFulfillerConv : ConversationHandler.END
         }
     )
 
     # List of handlers that the user can trigger based on their input.
     role_handlers = [
-        requester_conv,
-        fulfiller_conv
+        requester_init,
+        fulfiller_init
     ]
 
     conv_handler = ConversationHandler(
