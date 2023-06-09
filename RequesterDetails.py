@@ -41,7 +41,7 @@ table = db.Table(tableName)
 ####################################### Helper Functions #######################################
 # Function to put item in a given table
 def put_item(table, cols, RequestID, requester_chat_id, requester_user_name, canteen,
-             food, tip_amount, fulfiller_chat_id, fulfiller_user_name, request_status, chat_status):
+             food, tip_amount, fulfiller_chat_id, fulfiller_user_name, request_status):
     data = {
         cols[0]: RequestID,
         cols[1]: requester_chat_id,
@@ -51,8 +51,7 @@ def put_item(table, cols, RequestID, requester_chat_id, requester_user_name, can
         cols[5]: tip_amount,
         cols[6]: fulfiller_chat_id,
         cols[7]: fulfiller_user_name,
-        cols[8]: request_status,
-        cols[9]: chat_status,
+        cols[8]: request_status
     }
     
     response = table.put_item(Item = data)
@@ -148,7 +147,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     RequestID = "{}{}".format(datetime.now().timestamp(), update.effective_user.id)
 
     # Columns in the request table in DynamoDB
-    columns = ["RequestID", "requester_chat_id", "requester_user_name", "canteen", "food", "tip_amount", "fulfiller_chat_id", "fulfiller_user_name", "request_status", "chat_status"]
+    columns = ["RequestID", "requester_chat_id", "requester_user_name", "canteen", "food", "tip_amount", "fulfiller_chat_id", "fulfiller_user_name", "request_status"]
 
     request = {
         "RequestID" : RequestID,
@@ -160,7 +159,6 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "fulfiller_chat_id" : "",
         "fulfiller_user_name" : "",
         "request_status" : "Available",
-        "chat_status" : "await"
     }
 
     # Store the input of the requester's request into user_data.
@@ -180,8 +178,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                         context.user_data[MainMenu.OFFER_PRICE],
                         "",
                         "",
-                        "Available",
-                        "await")
+                        "Available")
 
     await update.message.reply_text(parse_mode="HTML", 
                                     text="Request placed! \n<b><u>Summary</u></b>" + 
