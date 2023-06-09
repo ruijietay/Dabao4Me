@@ -39,16 +39,20 @@ db = boto3.resource("dynamodb",
 table = db.Table(tableName)
 
 ####################################### Helper Functions #######################################
-
 # Function to put item in a given table
-def put_item(table, cols, requestID, requester_telegram_user_id, canteen, food, tip_amount, status):
+def put_item(table, cols, RequestID, requester_chat_id, requester_user_name, canteen,
+             food, tip_amount, fulfiller_chat_id, fulfiller_user_name, request_status, chat_status):
     data = {
-        cols[0]: requestID,
-        cols[1]: requester_telegram_user_id,
-        cols[2]: canteen,
-        cols[3]: food,
-        cols[4]: tip_amount,
-        cols[5]: status
+        cols[0]: RequestID,
+        cols[1]: requester_chat_id,
+        cols[2]: requester_user_name,
+        cols[3]: canteen,
+        cols[4]: food,
+        cols[5]: tip_amount,
+        cols[6]: fulfiller_chat_id,
+        cols[7]: fulfiller_user_name,
+        cols[8]: request_status,
+        cols[9]: chat_status,
     }
     
     response = table.put_item(Item = data)
@@ -56,10 +60,10 @@ def put_item(table, cols, requestID, requester_telegram_user_id, canteen, food, 
     return response
 
 # Get the request from the local python DS.
-def getRequest(available_requests, request_id):
+def getRequest(available_requests, requestID):
 
     for request in available_requests:
-        if request_id == request['request_id']:
+        if requestID == request['requestID']:
             return request
 
 
@@ -141,13 +145,13 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     logger.info("Tip amount set by requester '%s': '%0.2f'", update.effective_user.name, context.user_data[MainMenu.OFFER_PRICE])
 
     # RequestID which consists of time + telegram username
-    requestID = "{}{}".format(datetime.now().timestamp(), update.effective_user.id)
+    RequestID = "{}{}".format(datetime.now().timestamp(), update.effective_user.id)
 
     # Columns in the request table in DynamoDB
-    columns = ["RequestID", "requester_telegram_user_id", "canteen", "food", "tip_amount", "status"]
+    columns = ["RequestID", "requester_chat_id", "requester_user_name", "canteen", "food", "tip_amount", "fulfiller_chat_id", "fulfiller_user_name", "request_status", "chat_status"]
 
     request = {
-        "request_id" : requestID,
+        "RequestID" : RequestID,
         "requester_chat_id" : update.effective_user.id,
         "requester_user_name" : update.effective_user.name,
         "canteen" : context.user_data[MainMenu.CANTEEN],
@@ -155,7 +159,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "tip_amount" : context.user_data[MainMenu.OFFER_PRICE],
         "fulfiller_chat_id" : "",
         "fulfiller_user_name" : "",
-        "status" : "Available",
+        "request_status" : "Available",
         "chat_status" : "await"
     }
 
@@ -168,14 +172,16 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Put item in table
     response = put_item(table,
                         columns,
-                        requestID, 
-                        update.effective_user.id, 
+                        RequestID,
+                        str(update.effective_user.id),
+                        update.effective_user.name,
                         context.user_data[MainMenu.CANTEEN], 
                         context.user_data[MainMenu.FOOD], 
                         context.user_data[MainMenu.OFFER_PRICE],
-                        "Available")
-    
-    logger.info("DynamoDB put_item response for request_id '%s': '%s'", requestID, response["ResponseMetadata"]["HTTPStatusCode"])
+                        "",
+                        "",
+                        "Available",
+                        "await")
 
     await update.message.reply_text(parse_mode="HTML", 
                                     text="Request placed! \n<b><u>Summary</u></b>" + 

@@ -41,58 +41,83 @@ table = db.Table(tableName)
 
 ####################################### Helper Functions #######################################
 
-# Get and format requests from python storage 
-def processRequests(available_requests, selected_canteen):
+# Get and format requests from local python storage 
+# def processRequests(available_requests, selected_canteen):
 
+#     formatted_output = ""
+#     for requests in available_requests:
+#         formattedCanteen = MainMenu.canteenDict[selected_canteen]
+#         username = requests["requester_user_name"]
+#         food = requests["food"]
+#         tip_amount = requests["tip_amount"]
+#         formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: ${tip_amount}\n\n"
+    
+#     return formatted_output
+
+# Filter requests from local python storage
+# def filterRequests(available_requests, selected_canteen):
+
+#     filteredRequests = []
+#     for request in available_requests:
+#         canteen = request["canteen"]
+        
+#         if canteen == selected_canteen:
+#             filteredRequests.append(request)
+
+#     return filteredRequests
+
+
+# Get and format requests from DynamoDB
+def processRequests(requests):
     formatted_output = ""
-    for requests in available_requests:
-        formattedCanteen = MainMenu.canteenDict[selected_canteen]
-        username = requests["requester_user_name"]
-        food = requests["food"]
-        tip_amount = requests["tip_amount"]
-        formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: ${tip_amount}\n\n"
+
+    for request in requests:
+        formattedCanteen = request["canteen"]
+        requestID = request["RequestID"]
+        # The first 17 characters of the requestID is the time of the request.
+        unixTimestamp = float(requestID[:17])
+        username = request["requester_user_name"]
+        food = request["food"]
+        tip_amount = request["tip_amount"]
+        request_status = request["request_status"]
+
+        formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime("%d %b %y  %I:%M %p")
+
+        formatted_output += f"""Requested on: {formattedTimestamp}
+Username: {username}
+Canteen: {formattedCanteen}
+Food: {food}
+Tip Amount: ${tip_amount}
+Request Status: {request_status}
+
+"""
     
     return formatted_output
 
-def filterRequests(available_requests, selected_canteen):
+# Filter requests from dynamoDB by the specified canteen
+# TODO: Filter in order of the sort_key (time).
+def filterRequests(selected_canteen):
 
-    filteredRequests = []
-    for request in available_requests:
-        canteen = request["canteen"]
-        
-        if canteen == selected_canteen:
-            filteredRequests.append(request)
+    response = table.query(IndexName = "canteen-index",
+                        KeyConditionExpression = Key("canteen").eq(selected_canteen))
 
-    return filteredRequests
+    logger.info("DynamoDB query response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
-# # Get and format requests from DynamoDB
-# def processRequests(canteen):
-#     formatted_output = ""
+    requests = response["Items"]
+    sorted_requests = sorted(requests, key=lambda x: x["RequestID"][:17])
 
-#     response = table.query(IndexName = "canteen-index",
-#                            KeyConditionExpression = Key("canteen").eq(canteen))
-    
-#     logger.info("DynamoDB query response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
+    return sorted_requests
 
-#     for request in response["Items"]:
-#         formattedCanteen = MainMenu.canteenDict[canteen]
-#         requestID = request["RequestID"]
-#         unixTimestamp = float(requestID[:17])
-#         username = request["requester_telegram_username"]
-#         food = request["food"]
-#         tip_amount = request["tip_amount"]
+# Get item from table (not index)
+def get_item(primaryKey):
+    response = table.get_item(
+        Key = {
+            "RequestID": primaryKey
+        }
+    )
 
-#         formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime("%d %b %y  %I:%M %p")
+    return response
 
-#         formatted_output += f"""Requested on: {formattedTimestamp}
-# Username: {username}
-# Canteen: {formattedCanteen}
-# Food: {food}
-# Tip Amount: ${tip_amount}
-
-# """
-    
-#     return formatted_output
 
 ####################################### Main Functions #######################################
 
@@ -147,10 +172,11 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # Show list of available requests, filtered by the selected canteen.
     # 1. Using local python storage
-    await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(filterRequests(MainMenu.available_requests, selectedCanteen), selectedCanteen))
+    # await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(filterRequests(MainMenu.available_requests, selectedCanteen), selectedCanteen))
 
     # 2. Using DyanmoDB
-    # await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(selectedCanteen))
+    await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" +
+                                                   processRequests(filterRequests(selectedCanteen)))
 
     await update.callback_query.message.reply_text("To fulfill a request, use the /fulfil command, followed by the request number.")
 
