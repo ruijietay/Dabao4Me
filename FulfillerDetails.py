@@ -70,6 +70,7 @@ table = db.Table(tableName)
 # Get and format requests from DynamoDB
 def processRequests(requests):
     formatted_output = ""
+    requestCounter = 1
 
     for request in requests:
         formattedCanteen = request["canteen"]
@@ -79,27 +80,26 @@ def processRequests(requests):
         username = request["requester_user_name"]
         food = request["food"]
         tip_amount = request["tip_amount"]
-        request_status = request["request_status"]
 
         formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime("%d %b %y  %I:%M %p")
 
-        formatted_output += f"""Requested on: {formattedTimestamp}
-Username: {username}
+        formatted_output += f"""{requestCounter}) Requested on: {formattedTimestamp}
+Username / Name: {username}
 Canteen: {formattedCanteen}
 Food: {food}
 Tip Amount: ${tip_amount}
-Request Status: {request_status}
 
 """
+        requestCounter += 1
     
     return formatted_output
 
 # Filter requests from dynamoDB by the specified canteen
 # TODO: Filter in order of the sort_key (time).
 def filterRequests(selected_canteen):
-
-    response = table.query(IndexName = "canteen-index",
-                        KeyConditionExpression = Key("canteen").eq(selected_canteen))
+    response = table.query(
+        IndexName = "canteen-request_status-index",
+        KeyConditionExpression = Key("canteen").eq(selected_canteen) & Key("request_status").eq("Available"))
 
     logger.info("DynamoDB query response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
