@@ -7,7 +7,6 @@ import logging
 import re
 import MainMenu
 import DynamoDB
-import boto3
 import configparser
 
 ####################################### Parameters #######################################
