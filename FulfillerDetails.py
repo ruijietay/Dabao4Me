@@ -63,8 +63,8 @@ def processRequests(requests):
     for request in requests:
         formattedCanteen = request["canteen"]
         requestID = request["RequestID"]
-        # The first 17 characters of the requestID is the time of the request.
-        unixTimestamp = float(requestID[:17])
+        # The first 16 characters of the requestID is the time of the request.
+        unixTimestamp = float(requestID[:16])
         username = request["requester_user_name"]
         food = request["food"]
         tip_amount = request["tip_amount"]

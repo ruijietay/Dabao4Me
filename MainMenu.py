@@ -154,7 +154,7 @@ def main() -> None:
     modifyRequest_handler = ConversationHandler(
             entry_points = [CallbackQueryHandler(ModifyOrder.displayUserRequests, pattern = "modify")],
             states = {
-                DELETE_ORDER: [MessageHandler(filters.Regex(r"^\d+$"), ModifyOrder.deleteSelectedOrder)]
+                DELETE_ORDER: [MessageHandler(filters.TEXT, ModifyOrder.deleteSelectedOrder)]
             },
             fallbacks = [
                 CommandHandler("cancel", cancel),
@@ -177,7 +177,9 @@ def main() -> None:
         fallbacks = [
             CommandHandler("cancel", cancel),
             CommandHandler("start", start)
-            ])
+            ],
+        allow_reentry = True
+    )
     
     application.add_handler(conv_handler)
     application.add_handler(CommandHandler("cancel", invalidCancel))

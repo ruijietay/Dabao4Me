@@ -52,7 +52,7 @@ async def displayUserRequests(update: Update, context: ContextTypes.DEFAULT_TYPE
     requests = getAvailableRequestsFromChatId(chatId)
 
     if (len(requests) == 0):
-        await update.callback_query.message.reply_text("You have no available orders.")
+        await update.callback_query.message.reply_text("You have no available requests.")
 
         return ConversationHandler.END
 
@@ -63,7 +63,7 @@ async def displayUserRequests(update: Update, context: ContextTypes.DEFAULT_TYPE
     for request in requests:
         formattedCanteen = request["canteen"]
         requestID = request["RequestID"]
-        # The first 17 characters of the requestID is the time of the request.
+        # The first 16 characters of the requestID is the time of the request.
         unixTimestamp = float(requestID[:16])
         username = request["requester_user_name"]
         food = request["food"]
@@ -94,12 +94,16 @@ async def deleteSelectedOrder(update: Update, context: ContextTypes.DEFAULT_TYPE
     chatId = update.effective_chat.id
     intPattern = r"^\d+$"
     userInput = update.message.text
-    
+
     if not re.match(intPattern, userInput):
-        await update.message.reply_text("Sorry, you have entered an invalid input. Please try again.")
+        await update.message.reply_text("Sorry, you have entered an invalid input (numbers only). Please try again.")
         return MainMenu.DELETE_ORDER
     
-    selectedRequest = getAvailableRequestsFromChatId(chatId)[int(userInput) - 1]
+    try:
+        selectedRequest = getAvailableRequestsFromChatId(chatId)[int(userInput) - 1]
+    except IndexError:
+        await update.message.reply_text("Invalid request number. Please try again.")
+        return MainMenu.DELETE_ORDER
 
     response = DynamoDB.table.delete_item(Key = {"RequestID": selectedRequest["RequestID"]})
 
