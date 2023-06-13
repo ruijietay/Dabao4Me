@@ -1,13 +1,17 @@
 # Code that prompts the users with menu for them to select the appropriate choices when using the application.
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters, ConversationHandler
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters, ConversationHandler, ApplicationHandlerStop
 
 import logging
 import RequesterDetails
 import FulfillerDetails
 import MatchingUsers
+import ModifyOrder
+import DynamoDB
 import configparser
+
+####################################### Parameters #######################################
 
 # Create config parser and read config file
 config = configparser.ConfigParser()
@@ -22,7 +26,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-RESTART, ROLE, CANTEEN, FOOD, OFFER_PRICE, AWAIT_FULFILLER, REQUEST_MADE, FULFIL_REQUEST, FULFILLER_IN_CONVO, REQUEST_CHOSEN, REQUESTER_IN_CONVO = range(11)
+RESTART, SELECT_ORDER_TO_MODIFY, ROLE, CANTEEN, FOOD, OFFER_PRICE, AWAIT_FULFILLER, REQUEST_MADE, FULFIL_REQUEST, FULFILLER_IN_CONVO, REQUEST_CHOSEN, REQUESTER_IN_CONVO, DELETE_ORDER = range(13)
 
 available_requests = []
 
@@ -35,11 +39,17 @@ canteenDict = {
     "pgpr": "PGPR"
 }
 
+# Create table object
+table = DynamoDB.table
+
+####################################### Main Functions #######################################
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Define the menu using a 2D array.
     inlineMenu = [
         [InlineKeyboardButton("Request an order", callback_data="requester")],
         [InlineKeyboardButton("Fulfil an order", callback_data="fulfiller")],
+        [InlineKeyboardButton("Cancel a request", callback_data="modify")],
     ]
 
     # Transform the 2D array into an actual inline keyboard that can be interpreted by Telegram.
@@ -57,6 +67,8 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.message.from_user
     logger.info("'%s' (chat_id: '%s') sent an unknown command.", update.effective_user.name, update.effective_chat.id)
 
+    return ConversationHandler.END
+
 
 # Method to cancel current transaction
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -64,7 +76,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Store information about their action.
     user = update.message.from_user
-    logger.info("'%s' (chat_id: '%s') cancelled a transation.", update.effective_user.name, update.effective_chat.id)
+    logger.info("'%s' (chat_id: '%s') cancelled an operation.", update.effective_user.name, update.effective_chat.id)
 
     return ConversationHandler.END
 
@@ -77,32 +89,24 @@ async def invalidCancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user = update.message.from_user
     logger.info("'%s' (chat_id: '%s') sent an invalid '/cancel' command.", update.effective_user.name, update.effective_chat.id)
 
+############################## Main Program Entry Point ##############################
 
 def main() -> None:
     # Create the Application and pass it your bot's token.
     application = Application.builder().token(bot_token).build()
 
-    fulfiller_in_conv = ConversationHandler(
-        entry_points = [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg), CommandHandler("end", MatchingUsers.fulfillerEndConv)],
-        states = {
-            FULFILLER_IN_CONVO: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)]
-        },
-        fallbacks = [CommandHandler("end", MatchingUsers.fulfillerEndConv)],
-        map_to_parent= {
-            MatchingUsers.ENDConv : ConversationHandler.END
-        }
-    )
+    ############################## Requester Handlers ##############################
 
     requester_in_conv = ConversationHandler(
-        entry_points = [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg), CommandHandler("end", MatchingUsers.requesterEndConv)],
-        states = {
-            REQUESTER_IN_CONVO: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)]
-        },
-        fallbacks = [CommandHandler("end", MatchingUsers.requesterEndConv)],
-        map_to_parent= {
-            MatchingUsers.ENDConv : ConversationHandler.END
-        }
-    )
+            entry_points = [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg), CommandHandler("end", MatchingUsers.requesterEndConv)],
+            states = {
+                REQUESTER_IN_CONVO: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)]
+            },
+            fallbacks = [CommandHandler("end", MatchingUsers.requesterEndConv)],
+            map_to_parent= {
+                MatchingUsers.ENDConv : ConversationHandler.END
+            }
+        )
 
     requester_init = ConversationHandler(
         entry_points = [CallbackQueryHandler(RequesterDetails.promptCanteen, pattern = "requester")],
@@ -120,32 +124,62 @@ def main() -> None:
         }
     )
 
+    ############################## Fulfiller Handlers ##############################
+    fulfiller_in_conv = ConversationHandler(
+            entry_points = [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg), CommandHandler("end", MatchingUsers.fulfillerEndConv)],
+            states = {
+                FULFILLER_IN_CONVO: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)]
+            },
+            fallbacks = [CommandHandler("end", MatchingUsers.fulfillerEndConv)],
+            map_to_parent= {
+                MatchingUsers.ENDConv : ConversationHandler.END
+            }
+        )
+
     fulfiller_init = ConversationHandler(
-        entry_points = [CallbackQueryHandler(FulfillerDetails.promptCanteen , pattern = "fulfiller")],
-        states = {
-            CANTEEN: [CallbackQueryHandler(FulfillerDetails.selectCanteen)],
-            FULFIL_REQUEST: [CommandHandler("fulfil", MatchingUsers.fulfilRequest)],
-            FULFILLER_IN_CONVO: [fulfiller_in_conv]
-        },
-        fallbacks = [CommandHandler("cancel", cancel)],
-        map_to_parent= {
-            MatchingUsers.ENDFulfillerConv : ConversationHandler.END
-        }
-    )
+            entry_points = [CallbackQueryHandler(FulfillerDetails.promptCanteen , pattern = "fulfiller")],
+            states = {
+                CANTEEN: [CallbackQueryHandler(FulfillerDetails.selectCanteen)],
+                FULFIL_REQUEST: [CommandHandler("fulfil", MatchingUsers.fulfilRequest)],
+                FULFILLER_IN_CONVO: [fulfiller_in_conv]
+            },
+            fallbacks = [CommandHandler("cancel", cancel)],
+            map_to_parent= {
+                MatchingUsers.ENDFulfillerConv : ConversationHandler.END
+            }
+        )
+
+    ############################## Other Handlers ##############################
+
+    modifyRequest_handler = ConversationHandler(
+            entry_points = [CallbackQueryHandler(ModifyOrder.displayUserRequests, pattern = "modify")],
+            states = {
+                DELETE_ORDER: [MessageHandler(filters.TEXT, ModifyOrder.deleteSelectedOrder)]
+            },
+            fallbacks = [
+                CommandHandler("cancel", cancel),
+                ]
+        )
 
     # List of handlers that the user can trigger based on their input.
     role_handlers = [
         requester_init,
-        fulfiller_init
+        fulfiller_init,
+        modifyRequest_handler
     ]
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
-        states={
+        states = {
             RESTART: [CommandHandler("start", start)],
             ROLE: role_handlers
         },
-        fallbacks=[CommandHandler("cancel", cancel)])
+        fallbacks = [
+            CommandHandler("cancel", cancel),
+            CommandHandler("start", start)
+            ],
+        allow_reentry = True
+    )
     
     application.add_handler(conv_handler)
     application.add_handler(CommandHandler("cancel", invalidCancel))

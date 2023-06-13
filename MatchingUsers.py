@@ -5,11 +5,10 @@ from decimal import Decimal
 from time import sleep
 
 import logging
-import re
 import MainMenu
-import boto3
 import configparser
 import FulfillerDetails
+import DynamoDB
 import RequesterDetails
 
 ####################################### Parameters #######################################
@@ -77,7 +76,7 @@ async def fulfillerEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     request = response["Item"]
 
     # Update request_status in DynamoDB to "Closed".
-    response = FulfillerDetails.table.update_item(
+    response = DynamoDB.table.update_item(
         Key = {
             "RequestID": request["RequestID"]
         },
@@ -118,7 +117,7 @@ async def requesterEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     request = response["Item"]
 
     # Update request_status in DynamoDB to "Closed".
-    response = FulfillerDetails.table.update_item(
+    response = DynamoDB.table.update_item(
         Key = {
             "RequestID": request["RequestID"]
         },
@@ -164,7 +163,7 @@ async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # 2. Via python local storage
     #selectedRequest = FulfillerDetails.filterRequests(MainMenu.available_requests, selectedCanteen)[requestIndex]
 
-    response = FulfillerDetails.table.update_item(
+    response = DynamoDB.table.update_item(
         Key = {
             "RequestID": selectedRequest["RequestID"]
         },

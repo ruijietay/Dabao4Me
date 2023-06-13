@@ -6,7 +6,7 @@ from decimal import Decimal
 import logging
 import re
 import MainMenu
-import boto3
+import DynamoDB
 import configparser
 
 ####################################### Parameters #######################################
@@ -24,19 +24,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-########## Initialising DB and Required Tables ##########
-
-# The name of our table in DynamoDB
-tableName = "Dabao4Me_Requests"
-
-# Create resource object to access DynamoDB
-db = boto3.resource("dynamodb", 
-                    region_name = config["dynamodb"]["region_name"], 
-                    aws_access_key_id = config["dynamodb"]["aws_access_key_id"],
-                    aws_secret_access_key = config["dynamodb"]["aws_secret_access_key"])
-
-# Create table object with specified table name (the request table)
-table = db.Table(tableName)
+# Create table object
+table = DynamoDB.table
 
 ####################################### Helper Functions #######################################
 # Function to put item in a given table
@@ -144,7 +133,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     logger.info("Tip amount set by requester '%s': '%0.2f'", update.effective_user.name, context.user_data[MainMenu.OFFER_PRICE])
 
     # RequestID which consists of time + telegram username
-    RequestID = "{}{}".format(datetime.now().timestamp(), update.effective_user.id)
+    RequestID = "{}#{}".format(datetime.now().timestamp(), update.effective_user.id)
 
     # Columns in the request table in DynamoDB
     columns = ["RequestID", "requester_chat_id", "requester_user_name", "canteen", "food", "tip_amount", "fulfiller_chat_id", "fulfiller_user_name", "request_status"]
