@@ -81,7 +81,7 @@ def processRequests(requests):
         food = request["food"]
         tip_amount = request["tip_amount"]
 
-        formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime("%d %b %y  %I:%M %p")
+        formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime("%d %b %y %I:%M %p")
 
         formatted_output += f"""{requestCounter}) Requested on: {formattedTimestamp}
 Username / Name: {username}

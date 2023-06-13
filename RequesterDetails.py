@@ -144,7 +144,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     logger.info("Tip amount set by requester '%s': '%0.2f'", update.effective_user.name, context.user_data[MainMenu.OFFER_PRICE])
 
     # RequestID which consists of time + telegram username
-    RequestID = "{}{}".format(datetime.now().timestamp(), update.effective_user.id)
+    RequestID = "{}#{}".format(datetime.now().timestamp(), update.effective_user.id)
 
     # Columns in the request table in DynamoDB
     columns = ["RequestID", "requester_chat_id", "requester_user_name", "canteen", "food", "tip_amount", "fulfiller_chat_id", "fulfiller_user_name", "request_status"]

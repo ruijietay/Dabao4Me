@@ -8,6 +8,11 @@ import RequesterDetails
 import FulfillerDetails
 import MatchingUsers
 import configparser
+from boto3.dynamodb.conditions import Key
+from datetime import datetime
+import boto3
+
+####################################### Parameters #######################################
 
 # Create config parser and read config file
 config = configparser.ConfigParser()
@@ -22,7 +27,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-RESTART, ROLE, CANTEEN, FOOD, OFFER_PRICE, AWAIT_FULFILLER, REQUEST_MADE, FULFIL_REQUEST, FULFILLER_IN_CONVO, REQUEST_CHOSEN, REQUESTER_IN_CONVO = range(11)
+RESTART, SELECT_ORDER_TO_MODIFY, ROLE, CANTEEN, FOOD, OFFER_PRICE, AWAIT_FULFILLER, REQUEST_MADE, FULFIL_REQUEST, FULFILLER_IN_CONVO, REQUEST_CHOSEN, REQUESTER_IN_CONVO = range(12)
 
 available_requests = []
 
@@ -35,11 +40,29 @@ canteenDict = {
     "pgpr": "PGPR"
 }
 
+########## Initialising DB and Required Tables ##########
+
+# The name of our table in DynamoDB
+tableName = "Dabao4Me_Requests"
+
+# Create resource object to access DynamoDB
+db = boto3.resource('dynamodb', 
+                    region_name = config["dynamodb"]["region_name"], 
+                    aws_access_key_id = config["dynamodb"]["aws_access_key_id"],
+                    aws_secret_access_key = config["dynamodb"]["aws_secret_access_key"])
+
+
+# Create table object with specified table name
+table = db.Table(tableName)
+
+####################################### Main Functions #######################################
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Define the menu using a 2D array.
     inlineMenu = [
         [InlineKeyboardButton("Request an order", callback_data="requester")],
         [InlineKeyboardButton("Fulfil an order", callback_data="fulfiller")],
+        [InlineKeyboardButton("Modify/Cancel an order", callback_data="modify")],
     ]
 
     # Transform the 2D array into an actual inline keyboard that can be interpreted by Telegram.
@@ -64,7 +87,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Store information about their action.
     user = update.message.from_user
-    logger.info("'%s' (chat_id: '%s') cancelled a transation.", update.effective_user.name, update.effective_chat.id)
+    logger.info("'%s' (chat_id: '%s') cancelled an operation.", update.effective_user.name, update.effective_chat.id)
 
     return ConversationHandler.END
 
@@ -77,6 +100,52 @@ async def invalidCancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user = update.message.from_user
     logger.info("'%s' (chat_id: '%s') sent an invalid '/cancel' command.", update.effective_user.name, update.effective_chat.id)
 
+async def displayUserRequests(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Store user's chat ID
+    chatId = update.effective_chat.id
+    logger.info(chatId)
+
+    # Get all available requests from that user
+    response = table.query(
+        IndexName = "requester_chat_id-request_status-index",
+        KeyConditionExpression = Key("requester_chat_id").eq(str(chatId)) & Key("request_status").eq("Available"))
+
+    logger.info("DynamoDB query response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
+
+    requests = response["Items"]
+
+    # Sorts according to timestamp
+    sorted_requests = sorted(requests, key=lambda x: x["RequestID"][:17])
+
+    # Properly format available requests from that user
+    formatted_output = ""
+    requestCounter = 1
+
+    for request in sorted_requests:
+        formattedCanteen = request["canteen"]
+        requestID = request["RequestID"]
+        # The first 17 characters of the requestID is the time of the request.
+        unixTimestamp = float(requestID[:17])
+        username = request["requester_user_name"]
+        food = request["food"]
+        tip_amount = request["tip_amount"]
+
+        formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime("%d %b %y %I:%M %p")
+
+        formatted_output += f"""{requestCounter}) Requested on: {formattedTimestamp}
+Username / Name: {username}
+Canteen: {formattedCanteen}
+Food: {food}
+Tip Amount: ${tip_amount}
+
+"""
+        requestCounter += 1
+
+    # Send formatted output to user
+    await update.callback_query.message.reply_text("Here are all your currently availble orders: \n\n" +
+                                                   formatted_output)
+    
+    return
 
 def main() -> None:
     # Create the Application and pass it your bot's token.
@@ -133,10 +202,22 @@ def main() -> None:
         }
     )
 
+    modifyRequest_handler = ConversationHandler(
+        entry_points = [CallbackQueryHandler(displayUserRequests, pattern = "modify")],
+        states = {
+            SELECT_ORDER_TO_MODIFY: [MessageHandler(filters.Regex(r"^\d+$"), displayUserRequests)]
+        },
+        fallbacks = [
+            CommandHandler("cancel", cancel),
+            MessageHandler(filters.TEXT, unknown)
+            ]
+    )
+
     # List of handlers that the user can trigger based on their input.
     role_handlers = [
         requester_init,
-        fulfiller_init
+        fulfiller_init,
+        modifyRequest_handler
     ]
 
     conv_handler = ConversationHandler(
