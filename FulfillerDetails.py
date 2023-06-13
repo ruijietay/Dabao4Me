@@ -3,6 +3,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 
 import logging
 import MainMenu
+import DynamoDB
 import boto3
 from boto3.dynamodb.conditions import Key
 import configparser
@@ -23,21 +24,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-########## Initialising DB and Required Tables ##########
-
-# The name of our table in DynamoDB
-tableName = "Dabao4Me_Requests"
-
-# Create resource object to access DynamoDB
-db = boto3.resource('dynamodb', 
-                    region_name = config["dynamodb"]["region_name"], 
-                    aws_access_key_id = config["dynamodb"]["aws_access_key_id"],
-                    aws_secret_access_key = config["dynamodb"]["aws_secret_access_key"])
-
-
-# Create table object with specified table name
-table = db.Table(tableName)
-
+# Create table object
+table = DynamoDB.table
 
 ####################################### Helper Functions #######################################
 
@@ -104,7 +92,7 @@ def filterRequests(selected_canteen):
     logger.info("DynamoDB query response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
     requests = response["Items"]
-    sorted_requests = sorted(requests, key=lambda x: x["RequestID"][:17])
+    sorted_requests = sorted(requests, key=lambda x: x["RequestID"][:16])
 
     return sorted_requests
 
@@ -117,7 +105,6 @@ def get_item(primaryKey):
     )
 
     return response
-
 
 ####################################### Main Functions #######################################
 

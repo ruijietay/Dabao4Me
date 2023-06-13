@@ -6,6 +6,7 @@ from decimal import Decimal
 import logging
 import re
 import MainMenu
+import DynamoDB
 import boto3
 import configparser
 
@@ -24,19 +25,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-########## Initialising DB and Required Tables ##########
-
-# The name of our table in DynamoDB
-tableName = "Dabao4Me_Requests"
-
-# Create resource object to access DynamoDB
-db = boto3.resource("dynamodb", 
-                    region_name = config["dynamodb"]["region_name"], 
-                    aws_access_key_id = config["dynamodb"]["aws_access_key_id"],
-                    aws_secret_access_key = config["dynamodb"]["aws_secret_access_key"])
-
-# Create table object with specified table name (the request table)
-table = db.Table(tableName)
+# Create table object
+table = DynamoDB.table
 
 ####################################### Helper Functions #######################################
 # Function to put item in a given table
