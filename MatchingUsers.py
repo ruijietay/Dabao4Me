@@ -44,7 +44,7 @@ async def awaitFulfiller(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if (response["Item"]["request_status"] == "Available"):
         
         # TODO: delete request when user uses /cancel here. (EDIT: implement using conv_handler in MainMenu using command handlers)
-        await update.message.reply_text("We are still trying to find a fulfiller. Please wait, or use /cancel to quit.")
+        await update.message.reply_text("We are still trying to find a fulfiller. Please wait, or use /cancel to quit and remove your current request.")
 
         return MainMenu.AWAIT_FULFILLER
     elif (response["Item"]["request_status"] == "In Progress"):
@@ -65,6 +65,18 @@ async def awaitFulfiller(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await context.bot.send_message(chat_id=request["fulfiller_chat_id"], text=in_chat_reminder + requesterMsg, parse_mode="HTML")
 
         return MainMenu.REQUESTER_IN_CONVO
+    
+async def requesterCancelSearch(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Get the request ID of the request to be deleted by the requester.
+    RequestID = context.user_data[MainMenu.REQUEST_MADE]["RequestID"]
+    response = DynamoDB.table.delete_item(Key = {"RequestID": RequestID})
+
+    logger.info(f"Requester {update.effective_user.name} deleted their request (RequestID: {RequestID}) before a fulfiller was found")
+    logger.info("DynamoDB delete response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
+
+    await update.message.reply_text("Request cancelled! Use /start to use Dabao4Me again.")
+
+    return ConversationHandler.END
 
 # When the fulfiller ends the conversation using the /end command.
 async def fulfillerEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -115,6 +127,12 @@ async def requesterEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     # Get the request the fulfiller has chosen.
     request = response["Item"]
+
+    # Additional check needed here as this function might be called before the user is even connected to a user (while requester is in the midst of getting matched)
+    if (request["request_status"] == "Available"):
+        await update.message.reply_text("No conversation to end (we are still trying to find a fulfiller). Please wait, or use /cancel to quit and remove your current request.")
+
+        return MainMenu.AWAIT_FULFILLER
 
     # Update request_status in DynamoDB to "Closed".
     response = DynamoDB.table.update_item(
