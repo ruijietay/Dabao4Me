@@ -115,13 +115,16 @@ def main() -> None:
             FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterFood)],
             OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterPrice)],
             # TODO: include the command for "end" through messagehandler filters so that it can be passed onto the next conversationhandler in requester_in_conv
-            AWAIT_FULFILLER: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.awaitFulfiller), CommandHandler("cancel", MatchingUsers.requesterCancelSearch)],
+            AWAIT_FULFILLER: [
+                CommandHandler("end", MatchingUsers.requesterEndConv),
+                CommandHandler("cancel", MatchingUsers.requesterCancelSearch),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.awaitFulfiller)
+            ],
             REQUESTER_IN_CONVO: [requester_in_conv]
         },
         fallbacks = [CommandHandler("cancel", cancel)],
         map_to_parent= {
-            MatchingUsers.ENDRequesterConv : ConversationHandler.END,
-            ConversationHandler.END : ConversationHandler.END
+            MatchingUsers.ENDRequesterConv : ConversationHandler.END
         }
     )
 
@@ -159,7 +162,7 @@ def main() -> None:
             },
             fallbacks = [
                 CommandHandler("cancel", cancel),
-            ]
+                ]
         )
 
     # List of handlers that the user can trigger based on their input.

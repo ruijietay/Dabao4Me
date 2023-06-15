@@ -128,6 +128,12 @@ async def requesterEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     # Get the request the fulfiller has chosen.
     request = response["Item"]
 
+    # Additional check needed here as this function might be called before the user is even connected to a user (while requester is in the midst of getting matched)
+    if (request["request_status"] == "Available"):
+        await update.message.reply_text("No conversation to end (we are still trying to find a fulfiller). Please wait, or use /cancel to quit and remove your current request.")
+
+        return MainMenu.AWAIT_FULFILLER
+
     # Update request_status in DynamoDB to "Closed".
     response = DynamoDB.table.update_item(
         Key = {
