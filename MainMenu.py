@@ -26,7 +26,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-RESTART, SELECT_ORDER_TO_MODIFY, ROLE, CANTEEN, FOOD, OFFER_PRICE, AWAIT_FULFILLER, REQUEST_MADE, FULFIL_REQUEST, FULFILLER_IN_CONVO, REQUEST_CHOSEN, REQUESTER_IN_CONVO, DELETE_ORDER = range(13)
+RESTART, SELECT_ORDER_TO_MODIFY, ROLE, CANTEEN, FOOD, OFFER_PRICE, AWAIT_FULFILLER, REQUEST_MADE, FULFIL_REQUEST, FULFILLER_IN_CONVO, REQUEST_CHOSEN, REQUESTER_IN_CONVO, DELETE_ORDER, EDIT_CANTEEN, EDIT_CANTEEN_PROMPT, EDIT_FOOD, EDIT_TIP, EDIT_ORDER = range(18)
 
 available_requests = []
 
@@ -95,6 +95,25 @@ def main() -> None:
     # Create the Application and pass it your bot's token.
     application = Application.builder().token(bot_token).build()
 
+    ############################## Other Handlers ##############################
+
+    modifyRequest_handler = ConversationHandler(
+            entry_points = [
+                CallbackQueryHandler(RequesterDetails.editCanteenPrompt, pattern = "editCanteen"),
+                CallbackQueryHandler(RequesterDetails.editFood, pattern = "editFood"),
+                CallbackQueryHandler(RequesterDetails.editTip, pattern = "editTip")
+            ],
+            states = {
+                EDIT_CANTEEN: [CallbackQueryHandler(RequesterDetails.editCanteen)]
+            },
+            fallbacks = [
+                CommandHandler("cancel", cancel),
+            ],
+            map_to_parent= {
+                RequesterDetails.END_EDITING : AWAIT_FULFILLER
+            }
+        )
+
     ############################## Requester Handlers ##############################
 
     requester_in_conv = ConversationHandler(
@@ -118,9 +137,11 @@ def main() -> None:
             AWAIT_FULFILLER: [
                 CommandHandler("end", MatchingUsers.requesterEndConv),
                 CommandHandler("cancel", MatchingUsers.requesterCancelSearch),
+                CommandHandler("edit", MatchingUsers.promptEditRequest),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.awaitFulfiller)
             ],
-            REQUESTER_IN_CONVO: [requester_in_conv]
+            REQUESTER_IN_CONVO: [requester_in_conv],
+            EDIT_ORDER: [modifyRequest_handler]
         },
         fallbacks = [CommandHandler("cancel", cancel)],
         map_to_parent= {
@@ -151,18 +172,6 @@ def main() -> None:
             map_to_parent= {
                 MatchingUsers.ENDFulfillerConv : ConversationHandler.END
             }
-        )
-
-    ############################## Other Handlers ##############################
-
-    modifyRequest_handler = ConversationHandler(
-            entry_points = [CallbackQueryHandler(ModifyOrder.displayUserRequests, pattern = "modify")],
-            states = {
-                DELETE_ORDER: [MessageHandler(filters.TEXT, ModifyOrder.deleteSelectedOrder)]
-            },
-            fallbacks = [
-                CommandHandler("cancel", cancel),
-                ]
         )
 
     # List of handlers that the user can trigger based on their input.

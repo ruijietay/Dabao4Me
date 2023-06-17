@@ -78,6 +78,21 @@ async def requesterCancelSearch(update: Update, context: ContextTypes.DEFAULT_TY
 
     return ConversationHandler.END
 
+async def promptEditRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Define the menu using a 2D array.
+    inlineMenu = [
+        [InlineKeyboardButton("Change Canteen Location", callback_data="editCanteen")],
+        [InlineKeyboardButton("Change Food Option", callback_data="editFood")],
+        [InlineKeyboardButton("Change Tip Amount", callback_data="editTip")]
+    ]
+
+    # Transform the 2D array into an actual inline keyboard that can be interpreted by Telegram.
+    inlineMenuTG = InlineKeyboardMarkup(inlineMenu)
+
+    await update.message.reply_text("Please select the part of the request you'd like to edit: ", reply_markup=inlineMenuTG)
+
+    return MainMenu.EDIT_ORDER
+
 # When the fulfiller ends the conversation using the /end command.
 async def fulfillerEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Query the DB for the request selected by the fulfiller.
