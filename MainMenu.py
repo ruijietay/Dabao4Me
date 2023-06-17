@@ -100,11 +100,13 @@ def main() -> None:
     modifyRequest_handler = ConversationHandler(
             entry_points = [
                 CallbackQueryHandler(RequesterDetails.editCanteenPrompt, pattern = "editCanteen"),
-                CallbackQueryHandler(RequesterDetails.editFood, pattern = "editFood"),
-                CallbackQueryHandler(RequesterDetails.editTip, pattern = "editTip")
+                CallbackQueryHandler(RequesterDetails.editFoodPrompt, pattern = "editFood"),
+                CallbackQueryHandler(RequesterDetails.editTipPrompt, pattern = "editTip")
             ],
             states = {
-                EDIT_CANTEEN: [CallbackQueryHandler(RequesterDetails.editCanteen)]
+                EDIT_CANTEEN: [CallbackQueryHandler(RequesterDetails.editCanteen)],
+                EDIT_FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.editFood)],
+                EDIT_TIP: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.editTip)]
             },
             fallbacks = [
                 CommandHandler("cancel", cancel),

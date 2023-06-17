@@ -71,7 +71,7 @@ async def requesterCancelSearch(update: Update, context: ContextTypes.DEFAULT_TY
     RequestID = context.user_data[MainMenu.REQUEST_MADE]["RequestID"]
     response = DynamoDB.table.delete_item(Key = {"RequestID": RequestID})
 
-    logger.info(f"Requester {update.effective_user.name} deleted their request (RequestID: {RequestID}) before a fulfiller was found")
+    logger.info(f"Requester {update.effective_user.name} (chat_id: {update.effective_user.id}) deleted their request (RequestID: {RequestID}) before a fulfiller was found")
     logger.info("DynamoDB delete response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
     await update.message.reply_text("Request cancelled! Use /start to use Dabao4Me again.")
@@ -88,6 +88,9 @@ async def promptEditRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     # Transform the 2D array into an actual inline keyboard that can be interpreted by Telegram.
     inlineMenuTG = InlineKeyboardMarkup(inlineMenu)
+
+    # Log event
+    logger.info(f"Requester {update.effective_user.name} (chat_id: {update.effective_user.id}) is modifying their request.")
 
     await update.message.reply_text("Please select the part of the request you'd like to edit: ", reply_markup=inlineMenuTG)
 
@@ -129,7 +132,7 @@ async def fulfillerEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await context.bot.send_message(chat_id=request["requester_chat_id"], text=f"'{request['fulfiller_user_name']}' has ended the conversation. Use /start to request or fulfil an order again.")
 
     # Store information about their name.
-    logger.info("Fulfiller '%s' (chat_id: '%s') ended a conversation with '%s' (chat_id: '%s').", request["fulfiller_user_name"], ["fulfiller_chat_id"],
+    logger.info("Fulfiller '%s' (chat_id: '%s') ended a conversation with '%s' (chat_id: '%s').", request["fulfiller_user_name"], request["fulfiller_chat_id"],
                 request["requester_user_name"], request["requester_chat_id"])
 
     return ENDConv
