@@ -275,12 +275,13 @@ async def forwardFulfillerMsg(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Get the message the fulfiller is trying to send to the requester
     fulfillerMsg = update.message.text
 
-    # Get the request the fulfiller has chosen.
     try:
+        # Get the request the fulfiller has chosen.
         request = response["Item"]
         context.user_data[MainMenu.REQUEST_CHOSEN] = request
     except KeyError:
-        # This triggers in the event where the requester does /cancel instead of /end to gracefully end the convo.
+        # This triggers in the event where the requester does /cancel instead of /end to 
+        # gracefully end the convo, and the fulfiller tries to send a message to the requester.
         await update.message.reply_text(f"The requester has deleted their request. Use /start to request or fulfill an order again.")
         return ENDConv
 
