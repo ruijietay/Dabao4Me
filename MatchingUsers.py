@@ -195,6 +195,7 @@ async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # Get the specific request from the list of requests of the selected canteen via the requestIndex.
     # 1. Via DynamoDB
     selectedRequest = FulfillerDetails.filterRequests(selectedCanteen)[requestIndex]
+    #TODO: handle invalid indexes
 
     # 2. Via python local storage
     #selectedRequest = FulfillerDetails.filterRequests(MainMenu.available_requests, selectedCanteen)[requestIndex]
@@ -260,7 +261,8 @@ async def forwardFulfillerMsg(update: Update, context: ContextTypes.DEFAULT_TYPE
     try:
         request = response["Item"]
         context.user_data[MainMenu.REQUEST_CHOSEN] = request
-    except:
+    except KeyError:
+        # This triggers in the event where the requester does /cancel instead of /end to gracefully end the convo.
         await update.message.reply_text(f"The requester has deleted their request. Use /start to request or fulfill an order again.")
         return ENDConv
 
