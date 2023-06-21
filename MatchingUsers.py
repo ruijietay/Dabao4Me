@@ -257,8 +257,12 @@ async def forwardFulfillerMsg(update: Update, context: ContextTypes.DEFAULT_TYPE
     fulfillerMsg = update.message.text
 
     # Get the request the fulfiller has chosen.
-    request = response["Item"]
-    context.user_data[MainMenu.REQUEST_CHOSEN] = request
+    try:
+        request = response["Item"]
+        context.user_data[MainMenu.REQUEST_CHOSEN] = request
+    except:
+        await update.message.reply_text(f"The requester has deleted their request. Use /start to request or fulfill an order again.")
+        return ENDConv
 
     # Check if requester has ended the chat before sending the message to the requester.
     if (request["request_status"] == "Closed"):
