@@ -111,7 +111,7 @@ def main() -> None:
             fallbacks = [
                 CommandHandler("cancel", cancel),
             ],
-            map_to_parent= {
+            map_to_parent = {
                 RequesterDetails.END_EDITING : AWAIT_FULFILLER
             }
         )
@@ -124,7 +124,7 @@ def main() -> None:
                 REQUESTER_IN_CONVO: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)]
             },
             fallbacks = [CommandHandler("end", MatchingUsers.requesterEndConv)],
-            map_to_parent= {
+            map_to_parent = {
                 MatchingUsers.ENDConv : ConversationHandler.END
             }
         )
@@ -158,7 +158,7 @@ def main() -> None:
                 FULFILLER_IN_CONVO: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)]
             },
             fallbacks = [CommandHandler("end", MatchingUsers.fulfillerEndConv)],
-            map_to_parent= {
+            map_to_parent = {
                 MatchingUsers.ENDConv : ConversationHandler.END
             }
         )
@@ -171,7 +171,7 @@ def main() -> None:
                 FULFILLER_IN_CONVO: [fulfiller_in_conv]
             },
             fallbacks = [CommandHandler("cancel", cancel)],
-            map_to_parent= {
+            map_to_parent = {
                 MatchingUsers.ENDFulfillerConv : ConversationHandler.END
             }
         )

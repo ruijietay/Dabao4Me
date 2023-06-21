@@ -171,6 +171,6 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" +
                                                    processRequests(filterRequests(selectedCanteen)))
 
-    await update.callback_query.message.reply_text("To fulfill a request, use the /fulfil command, followed by the request number.")
+    await update.callback_query.message.reply_text("To fulfill a request, use the /fulfil command, followed by the request number. e.g. \"/fulfil 1\"")
 
     return MainMenu.FULFIL_REQUEST

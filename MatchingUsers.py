@@ -9,6 +9,7 @@ import MainMenu
 import configparser
 import FulfillerDetails
 import DynamoDB
+import re
 import RequesterDetails
 
 ####################################### Parameters #######################################
@@ -186,16 +187,33 @@ async def requesterEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     return ENDConv
 
 async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # Get the index of the request.
-    requestIndex = int(context.args[0]) - 1
-
+    # Store user's argument for the /fulfil command
+    userInput = context.args[0]
+    
     # Get the canteen the fulfiller selected.
     selectedCanteen = context.user_data[MainMenu.CANTEEN]
+
+    # Regex pattern for integers only
+    intPattern = r"^\d+$"
+
+    # Check that user input is an integer
+    if not re.match(intPattern, userInput):
+        await update.message.reply_text("Sorry, you have entered an invalid input (numbers only). Please try again.")
+        return MainMenu.FULFIL_REQUEST
+    
+    # Input has been verified to be an integer
+    requestIndex = int(userInput) - 1
+    
+    # Check that user input is not out of range
+    try: 
+        selectedRequest = FulfillerDetails.filterRequests(selectedCanteen)[requestIndex]
+    except IndexError:
+        await update.message.reply_text("Invalid request number. Please try again.")
+        return MainMenu.FULFIL_REQUEST  
 
     # Get the specific request from the list of requests of the selected canteen via the requestIndex.
     # 1. Via DynamoDB
     selectedRequest = FulfillerDetails.filterRequests(selectedCanteen)[requestIndex]
-    #TODO: handle invalid indexes
 
     # 2. Via python local storage
     #selectedRequest = FulfillerDetails.filterRequests(MainMenu.available_requests, selectedCanteen)[requestIndex]
