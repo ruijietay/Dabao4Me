@@ -49,7 +49,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     inlineMenu = [
         [InlineKeyboardButton("Request an order", callback_data="requester")],
         [InlineKeyboardButton("Fulfil an order", callback_data="fulfiller")],
-        [InlineKeyboardButton("Cancel a request", callback_data="modify")],
     ]
 
     # Transform the 2D array into an actual inline keyboard that can be interpreted by Telegram.
