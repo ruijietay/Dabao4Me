@@ -100,8 +100,10 @@ async def promptEditRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 # When the fulfiller ends the conversation using the /end command.
 async def fulfillerEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Query the DB for the request selected by the fulfiller.
-    # TODO: Do logging for all DB queries
     response = FulfillerDetails.get_item(context.user_data[MainMenu.REQUEST_CHOSEN]["RequestID"])
+
+    # Log DynamoDB response
+    logger.info("DynamoDB get_item response for RequestID '%s': '%s'", context.user_data[MainMenu.REQUEST_CHOSEN]["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
 
     # Get the request the fulfiller has chosen.
     request = response["Item"]
@@ -141,8 +143,10 @@ async def fulfillerEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 # When the requester ends the conversation using the /end command.
 async def requesterEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Query the DB for the request selected by the fulfiller.
-    # TODO: Do logging for all DB queries
     response = FulfillerDetails.get_item(context.user_data[MainMenu.REQUEST_MADE]["RequestID"])
+
+    # Log DynamoDB response
+    logger.info("DynamoDB get_item response for RequestID '%s': '%s'", context.user_data[MainMenu.REQUEST_MADE]["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
 
     # Get the request the fulfiller has chosen.
     request = response["Item"]
@@ -269,8 +273,10 @@ async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def forwardFulfillerMsg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Query the DB for the request selected by the fulfiller.
-    # TODO: Do logging for all DB queries
     response = FulfillerDetails.get_item(context.user_data[MainMenu.REQUEST_CHOSEN]["RequestID"])
+
+    # Log DynamoDB response
+    logger.info("DynamoDB get_item response for RequestID '%s': '%s'", context.user_data[MainMenu.REQUEST_CHOSEN]["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
 
     # Get the message the fulfiller is trying to send to the requester
     fulfillerMsg = update.message.text
@@ -304,6 +310,9 @@ async def forwardFulfillerMsg(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def forwardRequesterMsg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Query the DB for the request made by the requester.
     response = FulfillerDetails.get_item(context.user_data[MainMenu.REQUEST_MADE]["RequestID"])
+
+    # Log DynamoDB response
+    logger.info("DynamoDB get_item response for RequestID '%s': '%s'", context.user_data[MainMenu.REQUEST_MADE]["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
 
     # Get the message the requester is trying to send to the fulfiller
     requesterMsg = update.message.text
