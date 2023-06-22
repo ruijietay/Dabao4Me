@@ -1,2 +1,5 @@
 # Dabao4Me
-test
+Connecting hungry people.
+
+# Usage
+Just begin with /start
