@@ -146,7 +146,7 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     selectedCanteen = update.callback_query.data
 
     # Let user know their selected canteen.
-    await update.callback_query.message.reply_text(text=f"You have chosen {MainMenu.canteenDict[update.callback_query.data]} as your canteen.")
+    await update.callback_query.message.reply_text(text=f"You have chosen {MainMenu.canteenDict[selectedCanteen]} as your canteen.")
 
     # Store the input of the fulfiller's canteen into user_data
     context.user_data[MainMenu.CANTEEN] = selectedCanteen
@@ -162,9 +162,15 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(filterRequests(MainMenu.available_requests, selectedCanteen), selectedCanteen))
 
     # 2. Using DyanmoDB
-    await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" +
+    sortedRequests = filterRequests(selectedCanteen)
+
+    if len(sortedRequests) == 0:
+        await update.callback_query.message.reply_text(f"There are no requests at {MainMenu.canteenDict[selectedCanteen]}. Use /start to fulfill an order again.")
+        return ConversationHandler.END
+    else:
+        await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" +
                                                    processRequests(filterRequests(selectedCanteen)))
 
-    await update.callback_query.message.reply_text("To fulfill a request, use the /fulfil command, followed by the request number.")
+    await update.callback_query.message.reply_text("To fulfill a request, use the /fulfil command, followed by the request number. e.g. \"/fulfil 1\"")
 
     return MainMenu.FULFIL_REQUEST

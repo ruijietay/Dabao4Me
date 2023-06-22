@@ -9,6 +9,7 @@ import MainMenu
 import configparser
 import FulfillerDetails
 import DynamoDB
+import re
 import RequesterDetails
 
 ####################################### Parameters #######################################
@@ -99,8 +100,10 @@ async def promptEditRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 # When the fulfiller ends the conversation using the /end command.
 async def fulfillerEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Query the DB for the request selected by the fulfiller.
-    # TODO: Do logging for all DB queries
     response = FulfillerDetails.get_item(context.user_data[MainMenu.REQUEST_CHOSEN]["RequestID"])
+
+    # Log DynamoDB response
+    logger.info("DynamoDB get_item response for RequestID '%s': '%s'", context.user_data[MainMenu.REQUEST_CHOSEN]["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
 
     # Get the request the fulfiller has chosen.
     request = response["Item"]
@@ -140,8 +143,10 @@ async def fulfillerEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 # When the requester ends the conversation using the /end command.
 async def requesterEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Query the DB for the request selected by the fulfiller.
-    # TODO: Do logging for all DB queries
     response = FulfillerDetails.get_item(context.user_data[MainMenu.REQUEST_MADE]["RequestID"])
+
+    # Log DynamoDB response
+    logger.info("DynamoDB get_item response for RequestID '%s': '%s'", context.user_data[MainMenu.REQUEST_MADE]["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
 
     # Get the request the fulfiller has chosen.
     request = response["Item"]
@@ -186,11 +191,29 @@ async def requesterEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     return ENDConv
 
 async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # Get the index of the request.
-    requestIndex = int(context.args[0]) - 1
-
+    # Store user's argument for the /fulfil command
+    userInput = context.args[0]
+    
     # Get the canteen the fulfiller selected.
     selectedCanteen = context.user_data[MainMenu.CANTEEN]
+
+    # Regex pattern for integers only
+    intPattern = r"^\d+$"
+
+    # Check that user input is an integer
+    if not re.match(intPattern, userInput):
+        await update.message.reply_text("Sorry, you have entered an invalid input (numbers only). Please try again.")
+        return MainMenu.FULFIL_REQUEST
+    
+    # Input has been verified to be an integer
+    requestIndex = int(userInput) - 1
+    
+    # Check that user input is not out of range
+    try: 
+        selectedRequest = FulfillerDetails.filterRequests(selectedCanteen)[requestIndex]
+    except IndexError:
+        await update.message.reply_text("Invalid request number. Please try again.")
+        return MainMenu.FULFIL_REQUEST  
 
     # Get the specific request from the list of requests of the selected canteen via the requestIndex.
     # 1. Via DynamoDB
@@ -250,15 +273,23 @@ async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def forwardFulfillerMsg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Query the DB for the request selected by the fulfiller.
-    # TODO: Do logging for all DB queries
     response = FulfillerDetails.get_item(context.user_data[MainMenu.REQUEST_CHOSEN]["RequestID"])
+
+    # Log DynamoDB response
+    logger.info("DynamoDB get_item response for RequestID '%s': '%s'", context.user_data[MainMenu.REQUEST_CHOSEN]["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
 
     # Get the message the fulfiller is trying to send to the requester
     fulfillerMsg = update.message.text
 
-    # Get the request the fulfiller has chosen.
-    request = response["Item"]
-    context.user_data[MainMenu.REQUEST_CHOSEN] = request
+    try:
+        # Get the request the fulfiller has chosen.
+        request = response["Item"]
+        context.user_data[MainMenu.REQUEST_CHOSEN] = request
+    except KeyError:
+        # This triggers in the event where the requester does /cancel instead of /end to 
+        # gracefully end the convo, and the fulfiller tries to send a message to the requester.
+        await update.message.reply_text(f"The requester has deleted their request. Use /start to request or fulfill an order again.")
+        return ENDConv
 
     # Check if requester has ended the chat before sending the message to the requester.
     if (request["request_status"] == "Closed"):
@@ -279,6 +310,9 @@ async def forwardFulfillerMsg(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def forwardRequesterMsg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Query the DB for the request made by the requester.
     response = FulfillerDetails.get_item(context.user_data[MainMenu.REQUEST_MADE]["RequestID"])
+
+    # Log DynamoDB response
+    logger.info("DynamoDB get_item response for RequestID '%s': '%s'", context.user_data[MainMenu.REQUEST_MADE]["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
 
     # Get the message the requester is trying to send to the fulfiller
     requesterMsg = update.message.text
