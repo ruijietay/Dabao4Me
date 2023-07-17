@@ -61,9 +61,7 @@ def updateRatingTable(giver_chat_id, receiver_chat_id, rating):
 ####################################### Main Functions #######################################
 
 async def inputUserRating(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    #TODO: prompt thumbs up/down emoji for user to rate
-
-    # Define the canteens using a 2D array.
+    # Define the options using a 2D array.
     userRatingOptions = [
         [InlineKeyboardButton("\U0001F44D", callback_data = GOOD)],
         [InlineKeyboardButton("\U0001F44E", callback_data = BAD)]
