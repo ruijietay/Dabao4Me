@@ -26,7 +26,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-RESTART, SELECT_ORDER_TO_MODIFY, ROLE, CANTEEN, FOOD, OFFER_PRICE, AWAIT_FULFILLER, REQUEST_MADE, FULFIL_REQUEST, FULFILLER_IN_CONVO, REQUEST_CHOSEN, REQUESTER_IN_CONVO, DELETE_ORDER, EDIT_CANTEEN, EDIT_CANTEEN_PROMPT, EDIT_FOOD, EDIT_TIP, EDIT_ORDER = range(18)
+RESTART, SELECT_ORDER_TO_MODIFY, ROLE, CANTEEN, FOOD, OFFER_PRICE, AWAIT_FULFILLER, REQUEST_MADE, FULFIL_REQUEST, FULFILLER_IN_CONVO, REQUEST_CHOSEN, REQUESTER_IN_CONVO, DELETE_ORDER, EDIT_CANTEEN, EDIT_CANTEEN_PROMPT, EDIT_FOOD, EDIT_TIP, EDIT_ORDER, REQUESTER_CONFIRM, RATE_USER = range(20)
 
 available_requests = []
 
@@ -118,9 +118,9 @@ def main() -> None:
     ############################## Requester Handlers ##############################
 
     requester_in_conv = ConversationHandler(
-            entry_points = [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg), CommandHandler("end", MatchingUsers.requesterEndConv)],
+            entry_points = [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)],
             states = {
-                REQUESTER_IN_CONVO: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)]
+                REQUESTER_IN_CONVO: [CommandHandler("complete", MatchingUsers.requesterComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)],
             },
             fallbacks = [CommandHandler("end", MatchingUsers.requesterEndConv)],
             map_to_parent = {
@@ -139,6 +139,7 @@ def main() -> None:
                 CommandHandler("end", MatchingUsers.requesterEndConv),
                 CommandHandler("cancel", MatchingUsers.requesterCancelSearch),
                 CommandHandler("edit", MatchingUsers.promptEditRequest),
+                CommandHandler("complete", MatchingUsers.requesterComplete),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.awaitFulfiller)
             ],
             REQUESTER_IN_CONVO: [requester_in_conv],
