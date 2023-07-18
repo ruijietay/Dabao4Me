@@ -295,6 +295,9 @@ async def forwardFulfillerMsg(update: Update, context: ContextTypes.DEFAULT_TYPE
     if (request["request_status"] == "Closed"):
         await update.message.reply_text(f"'{request['requester_user_name']}' has ended the conversation. Use /start to request or fulfill an order again.")
         return ENDConv
+    elif (request["request_status"] == "Complete"):
+        await update.message.reply_text(f"The conversation has ended. Please rate '{request['requester_user_name']}' Use /start to request or fulfill an order again.")
+        return ENDConv
 
     # Else, store information about the event.
     logger.info("Fulfiller '%s' (chat_id: '%s') sent message to requester '%s' (chat_id: '%s'): %s", request["fulfiller_user_name"], request["fulfiller_chat_id"],
@@ -321,9 +324,12 @@ async def forwardRequesterMsg(update: Update, context: ContextTypes.DEFAULT_TYPE
     request = response["Item"]
     context.user_data[MainMenu.REQUEST_MADE] = request
     
-    # Check if requester has ended the chat before sending the message to the requester.
+    # Check valid convo status.
     if (request["request_status"] == "Closed"):
         await update.message.reply_text(f"'{request['fulfiller_user_name']}' has ended the conversation. Use /start to request or fulfill an order again.")
+        return ENDConv
+    elif (request["request_status"] == "Complete"):
+        await update.message.reply_text(f"The conversation has ended. Please rate '{request['fulfiller_user_name']}' Use /start to request or fulfill an order again.")
         return ENDConv
 
     # Else, store information about the event.
@@ -361,7 +367,7 @@ async def requesterComplete(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             # Send the appropriate message to the fulfiller
             await context.bot.send_message(chat_id=request["fulfiller_chat_id"], text=f"The request is now marked as complete. Please rate '{request['requester_user_name']}'.")
 
-            # Update request_status in DynamoDB to "Closed".
+            # Update request_status in DynamoDB to "Complete".
             response = DynamoDB.table.update_item(
                 Key = {
                     "RequestID": request["RequestID"]
@@ -379,8 +385,9 @@ async def requesterComplete(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             logger.info("DynamoDB update_item response for RequestID '%s': '%s'", request["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
 
             return MainMenu.RATE_USER
+        
         else:
-            # If requester is the one that initiated the confirmation of the request, send the appropritate message to the requester
+            # Else, requester is the one that initiated the confirmation of the request, send the appropritate message to the requester
             await update.message.reply_text(f"You have initiated to mark the order as complete. Please wait for '{request['fulfiller_user_name']}' to confirm before you can leave a rating for them.")
 
             # Send the appropriate message to the fulfiller
@@ -409,3 +416,68 @@ async def requesterComplete(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await update.message.reply_text(f"Fulfiller has yet to be found. Please use the command only when a fulfiller has been found, and you have agreed with them to mark the order as complete.")
 
         return MainMenu.AWAIT_FULFILLER
+    
+
+async def fulfillerComplete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Query the DB for the request made by the fulfiller.
+    response = FulfillerDetails.get_item(context.user_data[MainMenu.REQUEST_MADE]["RequestID"])
+
+    # Log DynamoDB response
+    logger.info("DynamoDB get_item response for RequestID '%s': '%s'", context.user_data[MainMenu.REQUEST_MADE]["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
+
+    # Get the request the fulfiller has put out.
+    request = response["Item"]
+    context.user_data[MainMenu.REQUEST_CHOSEN] = request
+
+    # Check if requester has already sent the "/confirm command"
+    if (request["requester_complete"] == "true"):
+
+        # If requester has already confirmed the fulfillment of the request, send the appropriate message to the fulfiller
+        await update.message.reply_text(f"The request is now complete. \n\nPlease rate '{request['requester_user_name']}'.")
+
+        # Send the appropriate message to the requester
+        await context.bot.send_message(chat_id=request["requester_chat_id"], 
+                                       text=f"The request is now marked as complete. Enjoy your meal!  \n\nPlease rate '{request['fulfiller_user_name']}'.")
+
+        # Update request_status in DynamoDB to "Complete".
+        response = DynamoDB.table.update_item(
+            Key = {
+                "RequestID": request["RequestID"]
+            },
+            UpdateExpression = "SET request_status = :status",
+            ExpressionAttributeValues = {
+                ":status" : "Complete"
+            }
+        )
+        
+        # Update status for request variable before updating user_data
+        request['request_status'] = "Complete"
+        context.user_data[MainMenu.REQUEST_MADE] = request
+        logger.info("DynamoDB update_item response for RequestID '%s': '%s'", request["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
+
+        return MainMenu.RATE_USER
+    
+    else:
+        # Else, fulfiller is the one that initiated the confirmation of the request, send the appropritate message to the fulfiller
+        await update.message.reply_text(f"You have initiated to mark the order as complete. Please wait for '{request['requester_user_name']}' to confirm before you can leave a rating for them.")
+
+        # Send the appropriate message to the requester
+        await context.bot.send_message(chat_id=request["requester_chat_id"], text=f"'{request['fulfiller_user_name']}' has initiated to make the order as complete. To confirm and leave a review for them, please use the '/complete' command.")
+
+        # Update fulfiller_complete to "true"
+        response = DynamoDB.table.update_item(
+            Key = {
+                "RequestID": request["RequestID"]
+            },
+            UpdateExpression = "SET fulfiller_complete = :complete",
+            ExpressionAttributeValues = {
+                ":complete" : "true"
+            }
+        )
+
+        # Update status for request variable before updating user_data
+        request['fulfiller_complete'] = "true"
+        context.user_data[MainMenu.REQUEST_MADE] = request
+        logger.info("DynamoDB update_item response for RequestID '%s': '%s'", request["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
+
+        return MainMenu.FULFILLER_IN_CONVO

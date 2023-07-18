@@ -88,6 +88,15 @@ async def invalidCancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user = update.message.from_user
     logger.info("'%s' (chat_id: '%s') sent an invalid '/cancel' command.", update.effective_user.name, update.effective_chat.id)
 
+
+# TODO: the ratings thingyyyyyyyyyyyyy
+async def ratings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.callback_query.answer()
+
+    print("helloworlddddddddddddddddddddddddddddddddddd")
+    
+    return RATE_USER
+
 ############################## Main Program Entry Point ##############################
 
 def main() -> None:
@@ -121,6 +130,7 @@ def main() -> None:
             entry_points = [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)],
             states = {
                 REQUESTER_IN_CONVO: [CommandHandler("complete", MatchingUsers.requesterComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)],
+                RATE_USER: [CallbackQueryHandler(ratings)]
             },
             fallbacks = [CommandHandler("end", MatchingUsers.requesterEndConv)],
             map_to_parent = {
@@ -153,9 +163,13 @@ def main() -> None:
 
     ############################## Fulfiller Handlers ##############################
     fulfiller_in_conv = ConversationHandler(
-            entry_points = [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg), CommandHandler("end", MatchingUsers.fulfillerEndConv)],
+            entry_points = [CommandHandler("end", MatchingUsers.fulfillerEndConv),
+                            CommandHandler("complete", MatchingUsers.fulfillerComplete),
+                            MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)
+                            ],
             states = {
-                FULFILLER_IN_CONVO: [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)]
+                FULFILLER_IN_CONVO: [CommandHandler("complete", MatchingUsers.fulfillerComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)],
+                RATE_USER: [CallbackQueryHandler(ratings)]
             },
             fallbacks = [CommandHandler("end", MatchingUsers.fulfillerEndConv)],
             map_to_parent = {
