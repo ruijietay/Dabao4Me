@@ -94,7 +94,7 @@ async def ratings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.callback_query.answer()
 
     print("helloworlddddddddddddddddddddddddddddddddddd")
-    
+
     return RATE_USER
 
 ############################## Main Program Entry Point ##############################
@@ -127,7 +127,8 @@ def main() -> None:
     ############################## Requester Handlers ##############################
 
     requester_in_conv = ConversationHandler(
-            entry_points = [MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)],
+            entry_points = [CommandHandler("complete", MatchingUsers.requesterComplete),
+                            MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)],
             states = {
                 REQUESTER_IN_CONVO: [CommandHandler("complete", MatchingUsers.requesterComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)],
                 RATE_USER: [CallbackQueryHandler(ratings)]
@@ -163,10 +164,8 @@ def main() -> None:
 
     ############################## Fulfiller Handlers ##############################
     fulfiller_in_conv = ConversationHandler(
-            entry_points = [CommandHandler("end", MatchingUsers.fulfillerEndConv),
-                            CommandHandler("complete", MatchingUsers.fulfillerComplete),
-                            MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)
-                            ],
+            entry_points = [CommandHandler("complete", MatchingUsers.fulfillerComplete),
+                            MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)],
             states = {
                 FULFILLER_IN_CONVO: [CommandHandler("complete", MatchingUsers.fulfillerComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)],
                 RATE_USER: [CallbackQueryHandler(ratings)]
