@@ -24,3 +24,6 @@ db = boto3.resource('dynamodb',
 
 # Create table object with specified table name
 table = db.Table(tableName)
+
+# The table tracking user ratings
+userRatingsTable = db.Table("Dabao4Me_User_Ratings")
