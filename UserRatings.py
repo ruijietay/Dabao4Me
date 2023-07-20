@@ -99,17 +99,20 @@ async def updateUserRatings(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Get the request the requester has put out.
     request = response["Item"]
 
-    # TODO: obtain the chat IDs of the fulfiller and requester, and call updateRatingTable() accordingly
-
+    # Save the chat_id of the user talking to the bot
     user_chat_id = update.effective_chat.id
 
+    # Get chat_id's of requester and fulfiller according to the database
     requester_chat_id = request['requester_chat_id']
     fulfiller_chat_id = request['fulfiller_chat_id']
 
+    # The person giving the rating is the one talking to the bot
+    # We do not know if the receiver is the fulfiller or requester at this stage.
     giver_chat_id = user_chat_id
     receiver_chat_id = "PLACEHOLDER"
 
-    if (int(user_chat_id) == int(fulfiller_chat_id)):
+    # If the person giving the rating is fulfiller, the person receiving must be the requester, and vice versa
+    if (int(giver_chat_id) == int(fulfiller_chat_id)):
         receiver_chat_id = requester_chat_id
     else:
         receiver_chat_id = fulfiller_chat_id
@@ -118,6 +121,7 @@ async def updateUserRatings(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Updates the table that stores user ratings
     updateRatingTable(giver_chat_id, receiver_chat_id, ratingInput)
 
-    await context.bot.send_message(chat_id = user_chat_id, text = "Rating submitted!")
+    # Sends rating confirmation message to the user
+    await context.bot.send_message(chat_id = user_chat_id, text = "Rating submitted! Use /start to use Dabao4Me again.")
 
     return ConversationHandler.END
