@@ -259,10 +259,10 @@ async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     context.user_data[MainMenu.REQUEST_CHOSEN] = FulfillerDetails.get_item(selectedRequest["RequestID"])["Item"]
 
     # Send message to fulfiller to indicate connection to the requester.
-    await update.message.reply_text("You are now connected with the requester! Use /end to end the conversation at any time.")
+    await update.message.reply_text("You are now connected with the requester! Use /end to end the conversation at any time, and /complete to mark the transaction as completed.")
 
     # Send message to requester to indicate connection to the fulfiller.
-    await context.bot.send_message(chat_id=selectedRequest["requester_chat_id"], text="Fulfiller found!. You are now connected with the fulfiller! Use /end to end the conversation at any time.")
+    await context.bot.send_message(chat_id=selectedRequest["requester_chat_id"], text="Fulfiller found!. You are now connected with the fulfiller! Use /end to end the conversation at any time, and /complete to mark the transaction as completed.")
 
     # Store information about the event.
     logger.info("Fulfiller '%s' (chat_id: '%s') started a conversation with '%s' (chat_id: '%s').", selectedRequest["fulfiller_user_name"], selectedRequest["fulfiller_chat_id"],
@@ -358,7 +358,7 @@ async def requesterComplete(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Check if the stauts of the request is "In progress" before allowing requester to confirm the order.
     if (request["request_status"] == "In Progress"):
 
-        # Check if fulfiller has already sent the "/confirm command"
+        # Check if fulfiller has already sent the "/complete command"
         if (request["fulfiller_complete"] == "true"):
 
             # If fulfiller has already confirmed the fulfillment of the request, send the appropriate message to the requester
@@ -429,7 +429,7 @@ async def fulfillerComplete(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     request = response["Item"]
     context.user_data[MainMenu.REQUEST_CHOSEN] = request
 
-    # Check if requester has already sent the "/confirm command"
+    # Check if requester has already sent the "/complete command"
     if (request["requester_complete"] == "true"):
 
         # If requester has already confirmed the fulfillment of the request, send the appropriate message to the fulfiller
