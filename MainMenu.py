@@ -131,6 +131,10 @@ def main() -> None:
 
     requester_in_conv = ConversationHandler(
         name = "requester_in_conv",
+            # CallbackQueryHandler for user ratings is for edge case:
+            # When requester initiates the "/complete" command as their first message,
+            # and no longer sends any other messages up till the order is marked as confirmed.
+            # We need to handle the ratings callbackquery when the order has been marked as confirmed.
             entry_points = [CommandHandler("complete", MatchingUsers.requesterComplete),
                             MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg),
                             CallbackQueryHandler(UserRatings.updateUserRatings)],
@@ -156,11 +160,16 @@ def main() -> None:
                 CommandHandler("end", MatchingUsers.requesterEndConv),
                 CommandHandler("cancel", MatchingUsers.requesterCancelSearch),
                 CommandHandler("edit", MatchingUsers.promptEditRequest),
+                # The requester can choose to immediately use the "/complete" command upon matching with the fulfiller.
+                # In this case, it will check if fulfiller already used the command before them. If so, return to RATE_USER below.
+                # Otherwise, return to REQUESTER_IN_CONVO.
                 CommandHandler("complete", MatchingUsers.requesterComplete),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.awaitFulfiller)
             ],
             REQUESTER_IN_CONVO: [requester_in_conv],
             EDIT_ORDER: [modifyRequest_handler],
+            # This is needed when fulfiller uses "/complete" before requester sends any message. Thus when requester uses "/complete", 
+            # it needs to return to RATE_USER as both users have already agreed to end the conversation.
             RATE_USER: [CallbackQueryHandler(UserRatings.updateUserRatings)]
         },
         fallbacks = [CommandHandler("cancel", cancel)],
@@ -173,8 +182,7 @@ def main() -> None:
     fulfiller_in_conv = ConversationHandler(
         name = "fulfiller_in_conv",
             entry_points = [CommandHandler("complete", MatchingUsers.fulfillerComplete),
-                            MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg),
-                            CallbackQueryHandler(UserRatings.updateUserRatings)],
+                            MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)],
             states = {
                 FULFILLER_IN_CONVO: [CommandHandler("complete", MatchingUsers.fulfillerComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg), CallbackQueryHandler(UserRatings.updateUserRatings)],
                 RATE_USER: [CallbackQueryHandler(UserRatings.updateUserRatings)]
@@ -192,7 +200,6 @@ def main() -> None:
                 CANTEEN: [CallbackQueryHandler(FulfillerDetails.selectCanteen)],
                 FULFIL_REQUEST: [CommandHandler("fulfil", MatchingUsers.fulfilRequest)],
                 FULFILLER_IN_CONVO: [fulfiller_in_conv],
-                RATE_USER: [CallbackQueryHandler(UserRatings.updateUserRatings)]
             },
             fallbacks = [CommandHandler("cancel", cancel)],
             map_to_parent = {

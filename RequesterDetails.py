@@ -183,7 +183,7 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                                     "\nFood: " + context.user_data[MainMenu.FOOD] +
                                     "\nTip Amount: $" + str(context.user_data[MainMenu.OFFER_PRICE]))
     
-    await update.message.reply_text("We will notify and connect you with a fulfiller when found. \n\n To cancel and delete your current request, use the /cancel command. \n\n To edit your current request, the use /edit command.")
+    await update.message.reply_text("We will notify and connect you with a fulfiller when found. \n\nTo cancel and delete your current request, use the /cancel command. \n\nTo edit your current request, the use /edit command.")
 
     return MainMenu.AWAIT_FULFILLER
 
