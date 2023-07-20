@@ -363,8 +363,6 @@ async def requesterComplete(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         if (request["fulfiller_complete"] == "true"):
 
             # If fulfiller has already confirmed the fulfillment of the request, send the appropriate message to the requester
-            # await update.message.reply_text(f"The request is now complete. Enjoy your meal! Please rate '{request['fulfiller_user_name']}'.")
-
             # Send the appropriate message to the fulfiller
             await context.bot.send_message(chat_id=request["fulfiller_chat_id"], text=f"The order is now complete. \n\nHow would you rate your interaction with {request['requester_user_name']}?", reply_markup = UserRatings.userRatingOptionsIK)
 
@@ -436,13 +434,11 @@ async def fulfillerComplete(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Check if requester has already sent the "/complete command"
     if (request["requester_complete"] == "true"):
 
-        # If requester has already confirmed the fulfillment of the request, send the appropriate message to the fulfiller
-        # await update.message.reply_text(f"The request is now complete. \n\nPlease rate '{request['requester_user_name']}'.")
-
+        # If requester has already confirmed the fulfillment of the request, send the appropriate message to the requester
         # Send the appropriate message to the requester
         await context.bot.send_message(chat_id=request["requester_chat_id"], 
                                        text=f"The order is now complete. \n\nHow would you rate your interaction with {request['fulfiller_user_name']}?", reply_markup = UserRatings.userRatingOptionsIK)
-
+        
         # Update request_status in DynamoDB to "Complete".
         response = DynamoDB.table.update_item(
             Key = {

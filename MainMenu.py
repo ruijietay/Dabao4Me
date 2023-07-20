@@ -132,9 +132,10 @@ def main() -> None:
     requester_in_conv = ConversationHandler(
         name = "requester_in_conv",
             entry_points = [CommandHandler("complete", MatchingUsers.requesterComplete),
-                            MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)],
+                            MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg),
+                            CallbackQueryHandler(UserRatings.updateUserRatings)],
             states = {
-                REQUESTER_IN_CONVO: [CommandHandler("complete", MatchingUsers.requesterComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)],
+                REQUESTER_IN_CONVO: [CommandHandler("complete", MatchingUsers.requesterComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg), CallbackQueryHandler(UserRatings.updateUserRatings)],
                 RATE_USER: [CallbackQueryHandler(UserRatings.updateUserRatings)]
             },
             fallbacks = [CommandHandler("end", MatchingUsers.requesterEndConv)],
@@ -161,7 +162,6 @@ def main() -> None:
             REQUESTER_IN_CONVO: [requester_in_conv],
             EDIT_ORDER: [modifyRequest_handler],
             RATE_USER: [CallbackQueryHandler(UserRatings.updateUserRatings)]
-
         },
         fallbacks = [CommandHandler("cancel", cancel)],
         map_to_parent= {
@@ -173,9 +173,10 @@ def main() -> None:
     fulfiller_in_conv = ConversationHandler(
         name = "fulfiller_in_conv",
             entry_points = [CommandHandler("complete", MatchingUsers.fulfillerComplete),
-                            MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)],
+                            MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg),
+                            CallbackQueryHandler(UserRatings.updateUserRatings)],
             states = {
-                FULFILLER_IN_CONVO: [CommandHandler("complete", MatchingUsers.fulfillerComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)],
+                FULFILLER_IN_CONVO: [CommandHandler("complete", MatchingUsers.fulfillerComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg), CallbackQueryHandler(UserRatings.updateUserRatings)],
                 RATE_USER: [CallbackQueryHandler(UserRatings.updateUserRatings)]
             },
             fallbacks = [CommandHandler("end", MatchingUsers.fulfillerEndConv)],
@@ -190,7 +191,8 @@ def main() -> None:
             states = {
                 CANTEEN: [CallbackQueryHandler(FulfillerDetails.selectCanteen)],
                 FULFIL_REQUEST: [CommandHandler("fulfil", MatchingUsers.fulfilRequest)],
-                FULFILLER_IN_CONVO: [fulfiller_in_conv]
+                FULFILLER_IN_CONVO: [fulfiller_in_conv],
+                RATE_USER: [CallbackQueryHandler(UserRatings.updateUserRatings)]
             },
             fallbacks = [CommandHandler("cancel", cancel)],
             map_to_parent = {

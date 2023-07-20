@@ -29,8 +29,6 @@ userRatingOptionsIK = InlineKeyboardMarkup(userRatingOptions)
 
 ####################################### Helper Functions #####################################
 def updateRatingTable(giver_chat_id, receiver_chat_id, rating):
-    print(giver_chat_id)
-    print(receiver_chat_id)
     # If GOOD rating given
     if (int(rating) == GOOD):
         # Increment giver's good_given
@@ -119,5 +117,7 @@ async def updateUserRatings(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     # Updates the table that stores user ratings
     updateRatingTable(giver_chat_id, receiver_chat_id, ratingInput)
+
+    await context.bot.send_message(chat_id = user_chat_id, text = "Rating submitted!")
 
     return ConversationHandler.END
