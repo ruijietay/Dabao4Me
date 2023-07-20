@@ -15,9 +15,6 @@ bot_token = config["bot_keys"]["current_bot_token"]
 # The name of our table in DynamoDB
 tableName = "Dabao4Me_Requests"
 
-# The name of the table tracking user ratings
-userRatingsTable = "Dabao4Me_User_Ratings"
-
 # Create resource object to access DynamoDB
 db = boto3.resource('dynamodb', 
                     region_name = config["dynamodb"]["region_name"], 
@@ -27,3 +24,6 @@ db = boto3.resource('dynamodb',
 
 # Create table object with specified table name
 table = db.Table(tableName)
+
+# The table tracking user ratings
+userRatingsTable = db.Table("Dabao4Me_User_Ratings")

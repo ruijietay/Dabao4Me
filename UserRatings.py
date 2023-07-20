@@ -4,6 +4,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 import DynamoDB
 import MainMenu
 import logging
+import FulfillerDetails
 
 ####################################### Parameters ###########################################
 
@@ -17,13 +18,24 @@ logger = logging.getLogger(__name__)
 GOOD = 1
 BAD = 0
 
+# Define the options using a 2D array.
+userRatingOptions = [
+    [InlineKeyboardButton("\U0001F44D", callback_data = GOOD)],
+    [InlineKeyboardButton("\U0001F44E", callback_data = BAD)]
+]
+
+# Transform the 2D array into an actual inline keyboard (IK) that can be interpreted by Telegram.
+userRatingOptionsIK = InlineKeyboardMarkup(userRatingOptions)
+
 ####################################### Helper Functions #####################################
 def updateRatingTable(giver_chat_id, receiver_chat_id, rating):
+    print(giver_chat_id)
+    print(receiver_chat_id)
     # If GOOD rating given
-    if (rating == GOOD):
+    if (int(rating) == GOOD):
         # Increment giver's good_given
         response = DynamoDB.userRatingsTable.update_item(
-            Key = {"user_chat_id": giver_chat_id},
+            Key = {"user_chat_id": str(giver_chat_id)},
             ExpressionAttributeValues = {":inc": 1},
             UpdateExpression = "ADD good_given :inc"
         )
@@ -32,26 +44,26 @@ def updateRatingTable(giver_chat_id, receiver_chat_id, rating):
 
         # Increment receiver's good_received
         response = DynamoDB.userRatingsTable.update_item(
-            Key = {"user_chat_id": receiver_chat_id},
+            Key = {"user_chat_id": str(receiver_chat_id)},
             ExpressionAttributeValues = {":inc": 1},
             UpdateExpression = "ADD good_received :inc"
         )
 
         logger.info("DynamoDB update_item response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
-    if (rating == BAD):
+    if (int(rating) == BAD):
         # Increment giver's bad_given
         response = DynamoDB.userRatingsTable.update_item(
-            Key = {"user_chat_id": giver_chat_id},
+            Key = {"user_chat_id": str(giver_chat_id)},
             ExpressionAttributeValues = {":inc": 1},
             UpdateExpression = "ADD bad_given :inc"
         )
 
         logger.info("DynamoDB update_item response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
 
-        # Increment receiver's good_received
+        # Increment receiver's bad_received
         response = DynamoDB.userRatingsTable.update_item(
-            Key = {"user_chat_id": receiver_chat_id},
+            Key = {"user_chat_id": str(receiver_chat_id)},
             ExpressionAttributeValues = {":inc": 1},
             UpdateExpression = "ADD bad_received :inc"
         )
@@ -76,13 +88,34 @@ async def inputUserRating(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     return MainMenu.UPDATE_RATINGS
 
 async def updateUserRatings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.callback_query.answer()
+
     # Get the rating input by the user
     ratingInput = update.callback_query.data
 
+    # Query the DB for the request made.
+    response = FulfillerDetails.get_item(context.user_data[MainMenu.REQUEST_MADE]["RequestID"])
+    # Log DynamoDB response
+    logger.info("DynamoDB get_item response for RequestID '%s': '%s'", context.user_data[MainMenu.REQUEST_MADE]["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
+
+    # Get the request the requester has put out.
+    request = response["Item"]
+
     # TODO: obtain the chat IDs of the fulfiller and requester, and call updateRatingTable() accordingly
 
-    giver_chat_id = "PLACEHOLDER"
+    user_chat_id = update.effective_chat.id
+
+    requester_chat_id = request['requester_chat_id']
+    fulfiller_chat_id = request['fulfiller_chat_id']
+
+    giver_chat_id = user_chat_id
     receiver_chat_id = "PLACEHOLDER"
+
+    if (int(user_chat_id) == int(fulfiller_chat_id)):
+        receiver_chat_id = requester_chat_id
+    else:
+        receiver_chat_id = fulfiller_chat_id
+
 
     # Updates the table that stores user ratings
     updateRatingTable(giver_chat_id, receiver_chat_id, ratingInput)

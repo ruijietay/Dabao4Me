@@ -64,7 +64,7 @@ def processRequests(requests):
         formattedCanteen = MainMenu.canteenDict[request["canteen"]]
         requestID = request["RequestID"]
         # The first 16 characters of the requestID is the time of the request.
-        unixTimestamp = float(requestID[:16])
+        unixTimestamp = float(requestID[:10])
         username = request["requester_user_name"]
         food = request["food"]
         tip_amount = request["tip_amount"]

@@ -10,6 +10,7 @@ import MatchingUsers
 import ModifyOrder
 import DynamoDB
 import configparser
+import UserRatings
 
 ####################################### Parameters #######################################
 
@@ -94,6 +95,7 @@ async def ratings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.callback_query.answer()
 
     print("helloworlddddddddddddddddddddddddddddddddddd")
+    print(update.callback_query.data)
 
     return RATE_USER
 
@@ -106,6 +108,7 @@ def main() -> None:
     ############################## Other Handlers ##############################
 
     modifyRequest_handler = ConversationHandler(
+        name = "modifyRequest_handler",
             entry_points = [
                 CallbackQueryHandler(RequesterDetails.editCanteenPrompt, pattern = "editCanteen"),
                 CallbackQueryHandler(RequesterDetails.editFoodPrompt, pattern = "editFood"),
@@ -127,11 +130,12 @@ def main() -> None:
     ############################## Requester Handlers ##############################
 
     requester_in_conv = ConversationHandler(
+        name = "requester_in_conv",
             entry_points = [CommandHandler("complete", MatchingUsers.requesterComplete),
                             MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)],
             states = {
                 REQUESTER_IN_CONVO: [CommandHandler("complete", MatchingUsers.requesterComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardRequesterMsg)],
-                RATE_USER: [CallbackQueryHandler(ratings)]
+                RATE_USER: [CallbackQueryHandler(UserRatings.updateUserRatings)]
             },
             fallbacks = [CommandHandler("end", MatchingUsers.requesterEndConv)],
             map_to_parent = {
@@ -140,6 +144,7 @@ def main() -> None:
         )
 
     requester_init = ConversationHandler(
+        name = "requester_init",
         entry_points = [CallbackQueryHandler(RequesterDetails.promptCanteen, pattern = "requester")],
         states  = {
             CANTEEN: [CallbackQueryHandler(RequesterDetails.selectCanteen)],
@@ -154,7 +159,9 @@ def main() -> None:
                 MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.awaitFulfiller)
             ],
             REQUESTER_IN_CONVO: [requester_in_conv],
-            EDIT_ORDER: [modifyRequest_handler]
+            EDIT_ORDER: [modifyRequest_handler],
+            RATE_USER: [CallbackQueryHandler(UserRatings.updateUserRatings)]
+
         },
         fallbacks = [CommandHandler("cancel", cancel)],
         map_to_parent= {
@@ -164,11 +171,12 @@ def main() -> None:
 
     ############################## Fulfiller Handlers ##############################
     fulfiller_in_conv = ConversationHandler(
+        name = "fulfiller_in_conv",
             entry_points = [CommandHandler("complete", MatchingUsers.fulfillerComplete),
                             MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)],
             states = {
                 FULFILLER_IN_CONVO: [CommandHandler("complete", MatchingUsers.fulfillerComplete), MessageHandler(filters.TEXT & ~filters.COMMAND, MatchingUsers.forwardFulfillerMsg)],
-                RATE_USER: [CallbackQueryHandler(ratings)]
+                RATE_USER: [CallbackQueryHandler(UserRatings.updateUserRatings)]
             },
             fallbacks = [CommandHandler("end", MatchingUsers.fulfillerEndConv)],
             map_to_parent = {
@@ -177,6 +185,7 @@ def main() -> None:
         )
 
     fulfiller_init = ConversationHandler(
+        name = "fulfiller_init",
             entry_points = [CallbackQueryHandler(FulfillerDetails.promptCanteen , pattern = "fulfiller")],
             states = {
                 CANTEEN: [CallbackQueryHandler(FulfillerDetails.selectCanteen)],
@@ -197,6 +206,7 @@ def main() -> None:
     ]
 
     conv_handler = ConversationHandler(
+        name = "conv_handler",
         entry_points=[CommandHandler("start", start)],
         states = {
             RESTART: [CommandHandler("start", start)],
