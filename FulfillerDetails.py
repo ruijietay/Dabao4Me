@@ -63,16 +63,48 @@ def processRequests(requests):
     for request in requests:
         formattedCanteen = MainMenu.canteenDict[request["canteen"]]
         requestID = request["RequestID"]
-        # The first 16 characters of the requestID is the time of the request.
+        # The first 16 characters of the requestID is the unix timestamp of the request.
+        # Only use 10 because we only care about accuracy to the second.
         unixTimestamp = float(requestID[:10])
         username = request["requester_user_name"]
+        chat_id = request["requester_chat_id"]
         food = request["food"]
         tip_amount = request["tip_amount"]
 
         formattedTimestamp = datetime.fromtimestamp(unixTimestamp).strftime("%d %b %y %I:%M %p")
 
+        # Get rating of requester
+        response = DynamoDB.userRatingsTable.get_item(
+            Key = {"user_chat_id": chat_id}
+        )
+
+        logger.info("User Ratings Table get_item response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        # print(response["Item"])
+        good_received = 0
+        bad_received = 0
+
+        try:
+            good_received = int(response["Item"]["good_received"])
+        except KeyError:
+            pass
+
+        try:
+            bad_received = int(response["Item"]["bad_received"])
+        except KeyError:
+            pass
+
+        total = int(good_received) + int(bad_received)
+        
+        if (total != 0):
+            ratingPercent = float(good_received) / float(total)
+            ratingPercent = int(ratingPercent * 100)
+        else:
+            ratingPercent = 0
+
+
         formatted_output += f"""{requestCounter}) Requested on: {formattedTimestamp}
-Username / Name: {username}
+Username / Name: {username} | {ratingPercent}% \U0001F44D out of {total} ratings.
 Canteen: {formattedCanteen}
 Food: {food}
 Tip Amount: ${tip_amount}

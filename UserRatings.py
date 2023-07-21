@@ -121,6 +121,13 @@ async def updateUserRatings(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # Updates the table that stores user ratings
     updateRatingTable(giver_chat_id, receiver_chat_id, ratingInput)
 
+    if (int(ratingInput) == GOOD):
+        logger.info(f"{giver_chat_id} gave {receiver_chat_id} a GOOD review.")
+    else:
+        logger.info(f"{giver_chat_id} gave {receiver_chat_id} a BAD review.")
+
+
+
     # Sends rating confirmation message to the user
     await context.bot.send_message(chat_id = user_chat_id, text = "Rating submitted! Use /start to use Dabao4Me again.")
 
