@@ -260,10 +260,45 @@ async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     context.user_data[MainMenu.REQUEST_CHOSEN] = FulfillerDetails.get_item(selectedRequest["RequestID"])["Item"]
 
     # Send message to fulfiller to indicate connection to the requester.
-    await update.message.reply_text("You are now connected with the requester! Use /end to end the conversation at any time, and /complete to mark the transaction as completed.")
+    await update.message.reply_text(f"You are now connected with {selectedRequest['requester_user_name']}! Use /end to end the conversation at any time, and /complete to mark the transaction as completed.")
+
+    # Get rating of fulfiller
+    response = DynamoDB.userRatingsTable.get_item(
+            Key = {"user_chat_id": str(update.effective_user.id)}
+        )
+    
+    print()
+
+    logger.info("User Ratings Table get_item response: %s", response["ResponseMetadata"]["HTTPStatusCode"])
+
+    # Initialize
+    good_received = 0
+    bad_received = 0
+
+    # If user has not received any ratings before, KeyError will occur during retrieval
+    try:
+        good_received = int(response["Item"]["good_received"])
+    except KeyError:
+        pass
+
+    try:
+        bad_received = int(response["Item"]["bad_received"])
+    except KeyError:
+        pass
+
+    total = int(good_received) + int(bad_received)
+    
+    # Make sure total is not 0 to avoid dividing by 0
+    if (total != 0):
+        ratingPercent = float(good_received) / float(total)
+        # We only want the integer portion of the number
+        ratingPercent = int(ratingPercent * 100)
+    else:
+        ratingPercent = 0
 
     # Send message to requester to indicate connection to the fulfiller.
-    await context.bot.send_message(chat_id=selectedRequest["requester_chat_id"], text="Fulfiller found!. You are now connected with the fulfiller! Use /end to end the conversation at any time, and /complete to mark the transaction as completed.")
+    await context.bot.send_message(chat_id=selectedRequest["requester_chat_id"], text=f"""Fulfiller found!. You are now connected with {selectedRequest["fulfiller_user_name"]} | {ratingPercent}% \U0001F44D out of {total} ratings.
+Use /end to end the conversation at any time, and /complete to mark the transaction as completed.""")
 
     # Store information about the event.
     logger.info("Fulfiller '%s' (chat_id: '%s') started a conversation with '%s' (chat_id: '%s').", selectedRequest["fulfiller_user_name"], selectedRequest["fulfiller_chat_id"],
