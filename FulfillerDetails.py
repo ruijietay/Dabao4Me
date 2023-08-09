@@ -115,7 +115,6 @@ Tip Amount: ${tip_amount}
     return formatted_output
 
 # Filter requests from dynamoDB by the specified canteen
-# TODO: Filter in order of the sort_key (time).
 def filterRequests(selected_canteen):
     response = table.query(
         IndexName = "canteen-request_status-index",
