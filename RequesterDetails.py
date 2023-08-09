@@ -161,7 +161,6 @@ async def requesterPrice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Put details of request into local python DS.
     MainMenu.available_requests.append(request)
     
-    # TODO: Update put item status logging and requester created a new request.
     # Put item in table
     response = put_item(table,
                         columns,
@@ -273,7 +272,6 @@ async def editFood(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("New food requested by requester '%s': '%s'", update.effective_user.name, context.user_data[MainMenu.FOOD])
 
     # Get the request of the requester stored in user_data
-    # TODO: Change from REQUEST_MADE AND REQUEST_SELECTED to just the requestID as the rest are not needed.
     request = context.user_data[MainMenu.REQUEST_MADE]
 
     response = DynamoDB.table.update_item(
@@ -326,7 +324,6 @@ async def editTip(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("New tip amount set by requester '%s': '%0.2f'", update.effective_user.name, context.user_data[MainMenu.OFFER_PRICE])
 
     # Get the request of the requester stored in user_data
-    # TODO: Change from REQUEST_MADE AND REQUEST_SELECTED to just the requestID as the rest are not needed.
     request = context.user_data[MainMenu.REQUEST_MADE]
 
     response = DynamoDB.table.update_item(
