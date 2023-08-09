@@ -90,7 +90,6 @@ async def invalidCancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.info("'%s' (chat_id: '%s') sent an invalid '/cancel' command.", update.effective_user.name, update.effective_chat.id)
 
 
-# TODO: the ratings thingyyyyyyyyyyyyy
 async def ratings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.callback_query.answer()
 
@@ -155,7 +154,6 @@ def main() -> None:
             CANTEEN: [CallbackQueryHandler(RequesterDetails.selectCanteen)],
             FOOD: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterFood)],
             OFFER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, RequesterDetails.requesterPrice)],
-            # TODO: include the command for "end" through messagehandler filters so that it can be passed onto the next conversationhandler in requester_in_conv
             AWAIT_FULFILLER: [
                 CommandHandler("end", MatchingUsers.requesterEndConv),
                 CommandHandler("cancel", MatchingUsers.requesterCancelSearch),

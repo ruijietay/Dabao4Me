@@ -45,7 +45,6 @@ async def awaitFulfiller(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Check the status of the chat (i.e. finding fulfiller, in-convo, or cancelled). If fulfiller not found, return back to awaitFulfiller method.
     if (response["Item"]["request_status"] == "Available"):
         
-        # TODO: delete request when user uses /cancel here. (EDIT: implement using conv_handler in MainMenu using command handlers)
         await update.message.reply_text("We are still trying to find a fulfiller. Please wait, or use /cancel to quit and remove your current request.")
 
         return MainMenu.AWAIT_FULFILLER
@@ -222,6 +221,7 @@ async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # 2. Via python local storage
     #selectedRequest = FulfillerDetails.filterRequests(MainMenu.available_requests, selectedCanteen)[requestIndex]
+
 
     response = DynamoDB.table.update_item(
         Key = {
