@@ -125,9 +125,6 @@ async def fulfillerEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     logger.info("DynamoDB update_item response for RequestID '%s': '%s'", request["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
 
-    # Update chat_status in local python DS to "end".
-    # MainMenu.available_requests[MainMenu.available_requests.index(requestMade)]["chat_status"] = "end"
-
     # Prompt fulfiller to confirm that the conversation has ended.
     await update.message.reply_text(f"You have ended the conversation with '{request['requester_user_name']}'. Use /start to request or fulfil an order again.")
 
@@ -174,10 +171,6 @@ async def requesterEndConv(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     logger.info("DynamoDB update_item response for RequestID '%s': '%s'", request["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
 
-
-    # Update chat_status in local python DS to "end".
-    # MainMenu.available_requests[MainMenu.available_requests.index(requestMade)]["chat_status"] = "end"
-
     # Prompt requester to confirm that the conversation has ended.
     await update.message.reply_text(f"You have ended the conversation with '{request['fulfiller_user_name']}'. Use /start to request or fulfil an order again.")
 
@@ -219,10 +212,6 @@ async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # 1. Via DynamoDB
     selectedRequest = FulfillerDetails.filterRequests(selectedCanteen)[requestIndex]
 
-    # 2. Via python local storage
-    #selectedRequest = FulfillerDetails.filterRequests(MainMenu.available_requests, selectedCanteen)[requestIndex]
-
-
     response = DynamoDB.table.update_item(
         Key = {
             "RequestID": selectedRequest["RequestID"]
@@ -242,19 +231,6 @@ async def fulfilRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     context.user_data[MainMenu.REQUEST_MADE] = selectedRequest
 
     logger.info("DynamoDB update_item response for RequestID '%s': '%s'", selectedRequest["RequestID"], response["ResponseMetadata"]["HTTPStatusCode"])
-
-    # # Update local python DS to include the requester's chat_id and username in the request.
-    # MainMenu.available_requests[MainMenu.available_requests.index(selectedRequest)]["fulfiller_chat_id"] = update.effective_user.id
-
-    # selectedRequest["fulfiller_chat_id"] = update.effective_user.id
-
-    # MainMenu.available_requests[MainMenu.available_requests.index(selectedRequest)]["fulfiller_user_name"] = update.effective_user.name
-
-    # selectedRequest["fulfiller_user_name"] = update.effective_user.name
-
-    # MainMenu.available_requests[MainMenu.available_requests.index(selectedRequest)]["chat_status"] = "connected"
-
-    # selectedRequest["chat_status"] = "connected"
 
     # Store the selected request the fulfiller has chosen into user_data
     context.user_data[MainMenu.REQUEST_CHOSEN] = FulfillerDetails.get_item(selectedRequest["RequestID"])["Item"]
