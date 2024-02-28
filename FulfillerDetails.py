@@ -29,32 +29,6 @@ table = DynamoDB.table
 
 ####################################### Helper Functions #######################################
 
-# Get and format requests from local python storage 
-# def processRequests(available_requests, selected_canteen):
-
-#     formatted_output = ""
-#     for requests in available_requests:
-#         formattedCanteen = MainMenu.canteenDict[selected_canteen]
-#         username = requests["requester_user_name"]
-#         food = requests["food"]
-#         tip_amount = requests["tip_amount"]
-#         formatted_output += f"Username: {username}\nCanteen: {formattedCanteen}\nFood: {food}\nTip Amount: ${tip_amount}\n\n"
-    
-#     return formatted_output
-
-# Filter requests from local python storage
-# def filterRequests(available_requests, selected_canteen):
-
-#     filteredRequests = []
-#     for request in available_requests:
-#         canteen = request["canteen"]
-        
-#         if canteen == selected_canteen:
-#             filteredRequests.append(request)
-
-#     return filteredRequests
-
-
 # Get and format requests from DynamoDB
 def processRequests(requests):
     formatted_output = ""
@@ -189,9 +163,7 @@ async def selectCanteen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.info("Fulfiller '%s' (chat_id: '%s') selected '%s' as their canteen.", update.effective_user.name, update.effective_user.id, update.callback_query.data)
 
     # Show list of available requests, filtered by the selected canteen.
-    # 1. Using local python storage
-    # await update.callback_query.message.reply_text("Great! Here's the list of available requests for the canteen you're currently at: \n\n" + processRequests(filterRequests(MainMenu.available_requests, selectedCanteen), selectedCanteen))
-
+    
     # 2. Using DyanmoDB
     sortedRequests = filterRequests(selectedCanteen)
 
